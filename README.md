@@ -16,8 +16,21 @@ Rails API pour la plateforme Clark Rent : gestion locative intelligente avec age
 ```bash
 bundle install
 cp .env.example .env
+# Remplir les variables dans .env
 rails db:create db:migrate
 rails server
+```
+
+## Structure
+
+```
+app/
+  controllers/api/v1/        # Endpoints REST
+  controllers/api/v1/agent/  # Endpoints agent IA
+  models/                    # Modèles ActiveRecord
+  services/clark_agent/      # Orchestrateur LLM + tools
+  jobs/                      # ActiveJobs (notifications)
+  mailers/                   # Emails
 ```
 
 ## Branches
