@@ -1,0 +1,85 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --clark-primary:   #449A84;
+    --clark-primary-d: #2D7A66;
+    --clark-primary-l: #E8F5F1;
+    --clark-dark:      #0F1F1B;
+    --clark-text:      #1A2E2A;
+    --clark-muted:     #6B7A76;
+    --clark-border:    #E2ECEA;
+    --clark-bg:        #F7FAF9;
+  }
+
+  * {
+    @apply border-clark-border;
+  }
+
+  body {
+    @apply bg-[--clark-bg] text-[--clark-text] font-sans antialiased;
+  }
+
+  /* Scrollbar discrète */
+  ::-webkit-scrollbar       { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-clark-200 rounded-full; }
+}
+
+@layer components {
+  /* Bouton principal */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5
+           bg-clark-400 hover:bg-clark-500 active:bg-clark-600
+           text-white font-medium text-sm rounded-xl
+           transition-all duration-150 ease-out
+           focus:outline-none focus:ring-2 focus:ring-clark-400 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Bouton ghost */
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2
+           text-clark-400 hover:bg-clark-50 font-medium text-sm rounded-xl
+           transition-all duration-150 ease-out;
+  }
+
+  /* Card standard */
+  .card {
+    @apply bg-white rounded-2xl shadow-card border border-[--clark-border] p-5;
+  }
+
+  /* Card interactive */
+  .card-hover {
+    @apply card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200 cursor-pointer;
+  }
+
+  /* Badge de statut */
+  .badge-green  { @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-clark-50 text-clark-600; }
+  .badge-orange { @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-50 text-orange-600; }
+  .badge-red    { @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-50 text-red-600; }
+  .badge-gray   { @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600; }
+
+  /* Input */
+  .input {
+    @apply w-full px-4 py-2.5 bg-white border border-[--clark-border] rounded-xl text-sm
+           placeholder:text-gray-400
+           focus:outline-none focus:ring-2 focus:ring-clark-400 focus:border-transparent
+           transition-all duration-150;
+  }
+
+  /* Message chat locataire */
+  .chat-bubble-user {
+    @apply self-end max-w-[80%] bg-clark-400 text-white px-4 py-2.5 rounded-2xl rounded-br-sm text-sm;
+  }
+
+  /* Message chat Clark */
+  .chat-bubble-clark {
+    @apply self-start max-w-[85%] bg-white border border-[--clark-border] shadow-card
+           px-4 py-2.5 rounded-2xl rounded-bl-sm text-sm text-[--clark-text];
+  }
+}
