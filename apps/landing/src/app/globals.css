@@ -1,0 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --clark: #449A84;
+    --clark-d: #2D7A66;
+    --clark-l: #E8F5F1;
+  }
+  html { scroll-behavior: smooth; }
+  body { @apply text-gray-900 bg-white; }
+  ::selection { background: #449A84; color: white; }
+}
+
+@layer components {
+  .btn-clark {
+    @apply inline-flex items-center gap-2 px-6 py-3 bg-clark-400 hover:bg-clark-500
+           text-white font-semibold text-sm rounded-2xl transition-all duration-200
+           shadow-lg shadow-clark-400/25 hover:shadow-clark-400/40 hover:-translate-y-0.5
+           focus:outline-none focus:ring-2 focus:ring-clark-400 focus:ring-offset-2;
+  }
+  .btn-outline {
+    @apply inline-flex items-center gap-2 px-6 py-3 border-2 border-clark-400
+           text-clark-400 hover:bg-clark-400 hover:text-white font-semibold text-sm
+           rounded-2xl transition-all duration-200;
+  }
+  .btn-white {
+    @apply inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-gray-50
+           text-gray-900 font-semibold text-sm rounded-2xl transition-all duration-200
+           shadow-sm border border-gray-200;
+  }
+  .section { @apply py-20 lg:py-28; }
+  .container { @apply max-w-6xl mx-auto px-5 lg:px-8; }
+  .tag {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 bg-clark-50 text-clark-600
+           text-xs font-semibold rounded-full uppercase tracking-wide;
+  }
+}
