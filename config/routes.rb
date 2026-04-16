@@ -1,4 +1,7 @@
 Rails.application.routes.draw do
+  # Health check — utilisé par Railway (railway.toml healthcheckPath)
+  get '/health', to: 'health#show'
+
   namespace :api do
     namespace :v1 do
       # Auth
@@ -29,7 +32,4 @@ Rails.application.routes.draw do
       end
     end
   end
-
-  # Health check
-  get '/health', to: proc { [200, {}, ['ok']] }
 end
