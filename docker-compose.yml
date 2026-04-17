@@ -1,0 +1,61 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: clark
+      POSTGRES_PASSWORD: clark
+      POSTGRES_DB: clark_development
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  web:
+    build: .
+    command: bundle exec puma -C config/puma.rb
+    volumes:
+      - .:/app
+      - bundle_cache:/usr/local/bundle
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      DATABASE_URL: postgresql://clark:clark@postgres/clark_development
+      REDIS_URL: redis://redis:6379/0
+      RAILS_ENV: development
+      SECRET_KEY_BASE: dev_secret_key_base_change_in_production
+      JWT_SECRET: dev_jwt_secret_change_in_production
+    env_file:
+      - path: .env
+        required: false
+
+  sidekiq:
+    build: .
+    command: bundle exec sidekiq -C config/sidekiq.yml
+    volumes:
+      - .:/app
+      - bundle_cache:/usr/local/bundle
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      DATABASE_URL: postgresql://clark:clark@postgres/clark_development
+      REDIS_URL: redis://redis:6379/0
+      RAILS_ENV: development
+      SECRET_KEY_BASE: dev_secret_key_base_change_in_production
+    env_file:
+      - path: .env
+        required: false
+
+volumes:
+  pg_data:
+  bundle_cache:
