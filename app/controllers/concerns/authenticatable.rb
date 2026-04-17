@@ -17,7 +17,5 @@ module Authenticatable
     render json: { error: 'Unauthorized' }, status: :unauthorized
   end
 
-  def current_user
-    @current_user
-  end
+  attr_reader :current_user
 end
