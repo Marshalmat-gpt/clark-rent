@@ -1,8 +1,10 @@
 require_relative 'boot'
-require 'rails/all'
-
+require 'rails'
+require 'active_record/railtie'
+require 'active_model/railtie'
+require 'action_controller/railtie'
+require 'active_job/railtie'
 Bundler.require(*Rails.groups)
-
 module ClarkRent
   class Application < Rails::Application
     config.load_defaults 7.2

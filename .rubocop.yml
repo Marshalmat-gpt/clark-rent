@@ -1,5 +1,5 @@
-inherit_gem:
-  rubocop-rails: rubocop.yml
+require:
+  - rubocop-rails
 
 AllCops:
   NewCops: enable
@@ -14,12 +14,9 @@ AllCops:
 
 Layout/LineLength:
   Max: 120
-
 Style/Documentation:
   Enabled: false
-
 Style/FrozenStringLiteralComment:
   Enabled: false
-
 Rails/FilePath:
   EnforcedStyle: arguments
