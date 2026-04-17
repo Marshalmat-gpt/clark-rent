@@ -4,7 +4,7 @@ git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 ruby '3.2.2'
 
 # Rails API
-gem 'rails', '~> 7.1'
+gem 'rails', '~> 7.2'
 gem 'pg', '~> 1.5'
 gem 'puma', '~> 6.0'
 
@@ -40,6 +40,8 @@ group :development, :test do
   gem 'factory_bot_rails'
   gem 'faker'
   gem 'dotenv-rails'
+  gem 'database_cleaner-active_record', '~> 2.1'
+  gem 'shoulda-matchers', '~> 5.3'
 end
 
 group :development do
