@@ -1,0 +1,16 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  url: <%= ENV.fetch('DATABASE_URL', "postgresql://clark:clark@localhost/clark_#{Rails.env}") %>
+  pool: <%= ENV.fetch('RAILS_MAX_THREADS', 5) %>
+
+development:
+  <<: *default
+  database: clark_development
+
+test:
+  <<: *default
+  database: clark_test
+
+production:
+  <<: *default
