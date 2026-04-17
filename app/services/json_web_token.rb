@@ -1,5 +1,9 @@
 class JsonWebToken
-  SECRET = ENV.fetch('JWT_SECRET', 'fallback_secret_development_only')
+  SECRET = if Rails.env.development? || Rails.env.test?
+             ENV.fetch('JWT_SECRET', 'fallback_secret_development_only')
+           else
+             ENV.fetch('JWT_SECRET') # raises KeyError on boot if unset in production
+           end
   EXPIRY = 24.hours
 
   def self.encode(payload, exp = EXPIRY.from_now)

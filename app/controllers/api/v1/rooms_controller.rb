@@ -13,6 +13,10 @@ module Api
       end
 
       def create
+        unless room_params[:property_id].present?
+          return render json: { errors: ["Property can't be blank"] }, status: :unprocessable_entity
+        end
+
         property = current_user.properties.find(room_params[:property_id])
         room = property.rooms.build(room_params.except('property_id'))
         if room.save

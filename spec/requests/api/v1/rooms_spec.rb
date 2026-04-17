@@ -69,6 +69,15 @@ RSpec.describe 'Api::V1::Rooms', type: :request do
 
       expect(response).to have_http_status(:unprocessable_entity)
     end
+
+    it 'returns 422 when property_id is missing' do
+      post '/api/v1/rooms',
+           params: { room: { name: 'Studio', rent: '650.00' } },
+           headers: auth_headers(user)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(JSON.parse(response.body)['errors']).to be_present
+    end
   end
 
   describe 'PATCH /api/v1/rooms/:id' do
@@ -79,6 +88,16 @@ RSpec.describe 'Api::V1::Rooms', type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(JSON.parse(response.body)['rent'].to_f).to eq(750.0)
+    end
+
+    it 'silently ignores property_id in update (room cannot be reassigned)' do
+      another_property = create(:property, user: user)
+      patch "/api/v1/rooms/#{room.id}",
+            params: { room: { rent: '800.00', property_id: another_property.id } },
+            headers: auth_headers(user)
+
+      expect(response).to have_http_status(:ok)
+      expect(room.reload.property_id).to eq(property.id) # unchanged
     end
 
     it 'returns 404 for another user room' do
