@@ -29,3 +29,6 @@ Rails/UnknownEnv:
     - test
     - staging
     - local
+# params.expect() is Rails 8.0+ — disable until we upgrade from 7.2
+Rails/StrongParametersExpect:
+  Enabled: false
