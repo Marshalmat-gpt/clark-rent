@@ -1,7 +1,7 @@
 module Api
   module V1
     class PropertiesController < BaseController
-      before_action :set_property, only: [:show, :update, :destroy, :documents]
+      before_action :set_property, only: %i[show update destroy documents]
 
       def index = render json: current_user.properties.order(:created_at), each_serializer: PropertySerializer
 

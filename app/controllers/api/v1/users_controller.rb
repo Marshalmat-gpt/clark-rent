@@ -1,8 +1,8 @@
 module Api
   module V1
     class UsersController < BaseController
-      skip_before_action :authenticate_user!, only: [:create]
-      before_action :set_user, only: [:show, :update, :destroy]
+      skip_before_action :authenticate_user!, only: %i[create]
+      before_action :set_user, only: %i[show update destroy]
 
       def index = render json: User.order(:created_at), each_serializer: UserSerializer
 
@@ -41,6 +41,7 @@ module Api
 
       def authorize_self!
         return if @user == current_user
+
         render json: { error: 'Forbidden' }, status: :forbidden
       end
 

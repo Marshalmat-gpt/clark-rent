@@ -1,7 +1,7 @@
 module Api
   module V1
     class RoomsController < BaseController
-      before_action :set_room, only: [:update, :destroy]
+      before_action :set_room, only: %i[update destroy]
 
       def index
         rooms = if params[:property_id]
@@ -13,9 +13,8 @@ module Api
       end
 
       def create
-        if room_params[:property_id].blank?
-          return render json: { errors: ["Property can't be blank"] }, status: :unprocessable_content
-        end
+        return render json: { errors: ["Property can't be blank"] }, status: :unprocessable_content if room_params[:property_id].blank?
+
         property = current_user.properties.find(room_params[:property_id])
         room = property.rooms.build(room_params.except('property_id'))
         if room.save
