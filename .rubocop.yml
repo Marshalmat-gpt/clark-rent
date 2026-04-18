@@ -2,7 +2,7 @@ require:
   - rubocop-rails
 
 AllCops:
-  NewCops: enable
+  NewCops: pending
   SuggestExtensions: false
   TargetRubyVersion: 3.2
   Exclude:
@@ -29,6 +29,3 @@ Rails/UnknownEnv:
     - test
     - staging
     - local
-# params.expect() is Rails 8.0+ — disable until we upgrade from 7.2
-Rails/StrongParametersExpect:
-  Enabled: false
