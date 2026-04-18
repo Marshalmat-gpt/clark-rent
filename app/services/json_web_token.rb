@@ -9,7 +9,7 @@ class JsonWebToken
   EXPIRY = 24.hours
 
   def self.encode(payload, exp = EXPIRY.from_now)
-    payload[:exp] = exp.to_i
+    payload[:exp] ||= exp.to_i
     JWT.encode(payload, SECRET, 'HS256')
   end
 
