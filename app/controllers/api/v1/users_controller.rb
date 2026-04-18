@@ -21,6 +21,7 @@ module Api
       def update
         authorize_self!
         return unless performed?
+
         if @user.update(user_params)
           render json: @user, serializer: UserSerializer
         else
@@ -31,6 +32,7 @@ module Api
       def destroy
         authorize_self!
         return unless performed?
+
         @user.destroy
         render json: { message: 'Account deleted' }, status: :ok
       end

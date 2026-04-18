@@ -11,6 +11,7 @@ module Authenticatable
     header = request.headers['Authorization']
     token  = header&.split&.last
     raise JWT::DecodeError, 'Missing token' if token.nil?
+
     decoded = JsonWebToken.decode(token)
     @current_user = User.find(decoded[:user_id])
   rescue JWT::DecodeError, ActiveRecord::RecordNotFound
