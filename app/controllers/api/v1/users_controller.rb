@@ -5,7 +5,6 @@ module Api
       before_action :set_user, only: %i[show update destroy]
 
       def index = render json: User.order(:created_at), each_serializer: UserSerializer
-
       def show = render json: @user, serializer: UserSerializer
 
       def create
@@ -20,7 +19,7 @@ module Api
 
       def update
         authorize_self!
-        return unless performed?
+        return if performed?
 
         if @user.update(user_params)
           render json: @user, serializer: UserSerializer
@@ -31,7 +30,7 @@ module Api
 
       def destroy
         authorize_self!
-        return unless performed?
+        return if performed?
 
         @user.destroy
         render json: { message: 'Account deleted' }, status: :ok

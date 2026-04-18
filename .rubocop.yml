@@ -11,6 +11,8 @@ AllCops:
     - 'config/**/*'
     - 'vendor/**/*'
     - 'spec/**/*'
+    - 'Gemfile'
+    - 'Rakefile'
 
 Layout/LineLength:
   Max: 120
@@ -20,3 +22,10 @@ Style/FrozenStringLiteralComment:
   Enabled: false
 Rails/FilePath:
   EnforcedStyle: arguments
+Rails/UnknownEnv:
+  Environments:
+    - production
+    - development
+    - test
+    - staging
+    - local
