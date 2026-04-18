@@ -1,14 +1,7 @@
 require 'spec_helper'
 ENV['RAILS_ENV'] ||= 'test'
 
-begin
-  require_relative '../config/environment'
-rescue => e
-  warn "\n=== RAILS BOOT ERROR ===\n#{e.class}: #{e.message}\n" \
-       e.backtrace.first(10).join("\n") +
-       "\n========================\n"
-  raise
-end
+require_relative '../config/environment'
 
 require 'rspec/rails'
 require 'factory_bot_rails'

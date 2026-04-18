@@ -10,8 +10,10 @@ Bundler.require(*Rails.groups)
 # Logger wiring is restored by config/initializers/ams_logger.rb.
 if defined?(ActiveModelSerializers::Railtie)
   ams_init = ActiveModelSerializers::Railtie.initializers
-                                            .find { |i| i.name == 'active_model_serializers.set_configs' }
-  ams_init&.instance_variable_get(:@options)&.delete(:after)
+                                            .find { |i| i.name.to_s == 'active_model_serializers.set_configs' }
+  opts = ams_init&.instance_variable_get(:@options)
+  opts&.delete(:after)
+  opts&.delete('after')
 end
 
 module ClarkRent
