@@ -13,10 +13,9 @@ module Api
       end
 
       def create
-        return render(
-          json: { errors: ["Property can't be blank"] },
-          status: :unprocessable_content
-        ) if room_params[:property_id].blank?
+        if room_params[:property_id].blank? # rubocop:disable Style/GuardClause
+          return render json: { errors: ["Property can't be blank"] }, status: :unprocessable_content
+        end
 
         property = current_user.properties.find(room_params[:property_id])
         room = property.rooms.build(room_params.except('property_id'))
