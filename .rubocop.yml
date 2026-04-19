@@ -1,5 +1,5 @@
-inherit_gem:
-  rubocop-rails: config/default.yml
+require:
+  - rubocop-rails
 
 AllCops:
   NewCops: pending
