@@ -5,10 +5,10 @@ module Api
 
       def index
         rooms = if params[:property_id]
-                   current_user.properties.find(params[:property_id]).rooms
-                 else
-                   Room.joins(:property).where(properties: { user_id: current_user.id })
-                 end
+                  current_user.properties.find(params[:property_id]).rooms
+                else
+                  Room.joins(:property).where(properties: { user_id: current_user.id })
+                end
         render json: rooms.order(:created_at), each_serializer: RoomSerializer
       end
 
