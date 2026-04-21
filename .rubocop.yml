@@ -24,6 +24,8 @@ Style/AsciiComments:
   Enabled: false
 Rails/FilePath:
   EnforcedStyle: arguments
+Rails/StrongParametersExpect:
+  Enabled: false
 Rails/UnknownEnv:
   Environments:
     - production
