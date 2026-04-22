@@ -3,17 +3,15 @@ require 'rails/all'
 Bundler.require(*Rails.groups)
 
 # Fix TSort::Cyclic caused by active_model_serializers 0.10.x on Rails 7.2+
-# The `active_model_serializers.set_configs` initializer declares
-# `after: 'action_controller.set_configs'` which creates a cyclic dependency
-# in Rails 7.2's global initializer graph when combined with auto-chaining.
-# Fix: remove the :after ordering constraint from that single initializer only.
-# Logger wiring is restored by config/initializers/ams_logger.rb.
+# @options is frozen in Rails 7.2, so we cannot use Hash#delete in place.
+# Instead, replace the entire ivar with a new unfrozen hash that excludes `after`.
 if defined?(ActiveModelSerializers::Railtie)
   ams_init = ActiveModelSerializers::Railtie.initializers
-                                            .find { |i| i.name.to_s == 'active_model_serializers.set_configs' }
-  opts = ams_init&.instance_variable_get(:@options)
-  opts&.delete(:after)
-  opts&.delete('after')
+               .find { |i| i.name.to_s == 'active_model_serializers.set_configs' }
+  if ams_init
+    opts = ams_init.instance_variable_get(:@options) || {}
+    ams_init.instance_variable_set(:@options, opts.reject { |k, _| k.to_s == 'after' })
+  end
 end
 
 module ClarkRent

@@ -13,7 +13,7 @@ module Api
       end
 
       def create
-        if room_params[:property_id].blank? # rubocop:disable Style/GuardClause
+        if room_params[:property_id].blank?
           return render json: { errors: ["Property can't be blank"] }, status: :unprocessable_content
         end
 
