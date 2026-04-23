@@ -5,13 +5,15 @@ Bundler.require(*Rails.groups)
 # Fix TSort::Cyclic caused by active_model_serializers 0.10.x on Rails 7.2+.
 # The 'set_configs' initializer declares `after: 'action_controller.set_configs'`
 # which creates a circular dependency in Rails 7.2's initializer graph.
-# Removing it from the railtie's InitializerCollection before initialize! is
-# called prevents the cycle. AMS logger is wired separately via
-# config/initializers/ams_logger.rb.
+# We intercept the class-level .initializers call on the railtie and return
+# a filtered array — no mutation, so works even if the collection is frozen.
+# AMS logger is wired separately via config/initializers/ams_logger.rb.
 if defined?(ActiveModelSerializers::Railtie)
-  ActiveModelSerializers::Railtie.initializers.delete_if do |i|
-    i.name.to_s == 'active_model_serializers.set_configs'
-  end
+  ActiveModelSerializers::Railtie.singleton_class.prepend(Module.new do
+    def initializers
+      super.reject { |i| i.name.to_s == 'active_model_serializers.set_configs' }
+    end
+  end)
 end
 
 module ClarkRent
