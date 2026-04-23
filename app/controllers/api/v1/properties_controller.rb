@@ -12,7 +12,7 @@ module Api
         if property.save
           render json: property, serializer: PropertySerializer, status: :created
         else
-          render json: { errors: property.errors.full_messages }, status: :unprocessable_content
+          render json: { errors: property.errors.full_messages }, status: :unprocessable_entity
         end
       end
 
@@ -20,7 +20,7 @@ module Api
         if @property.update(property_params)
           render json: @property, serializer: PropertySerializer
         else
-          render json: { errors: @property.errors.full_messages }, status: :unprocessable_content
+          render json: { errors: @property.errors.full_messages }, status: :unprocessable_entity
         end
       end
 

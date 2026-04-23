@@ -14,7 +14,7 @@ module Api
 
       def create
         if room_params[:property_id].blank?
-          return render json: { errors: ["Property can't be blank"] }, status: :unprocessable_content
+          return render json: { errors: ["Property can't be blank"] }, status: :unprocessable_entity
         end
 
         property = current_user.properties.find(room_params[:property_id])
@@ -22,7 +22,7 @@ module Api
         if room.save
           render json: room, serializer: RoomSerializer, status: :created
         else
-          render json: { errors: room.errors.full_messages }, status: :unprocessable_content
+          render json: { errors: room.errors.full_messages }, status: :unprocessable_entity
         end
       end
 
@@ -30,7 +30,7 @@ module Api
         if @room.update(room_params.except('property_id'))
           render json: @room, serializer: RoomSerializer
         else
-          render json: { errors: @room.errors.full_messages }, status: :unprocessable_content
+          render json: { errors: @room.errors.full_messages }, status: :unprocessable_entity
         end
       end
 

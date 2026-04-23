@@ -13,7 +13,7 @@ module Api
           token = JsonWebToken.encode(user_id: user.id)
           render json: { token: token, user: UserSerializer.new(user).attributes }, status: :created
         else
-          render json: { errors: user.errors.full_messages }, status: :unprocessable_content
+          render json: { errors: user.errors.full_messages }, status: :unprocessable_entity
         end
       end
 
@@ -24,7 +24,7 @@ module Api
         if @user.update(user_params)
           render json: @user, serializer: UserSerializer
         else
-          render json: { errors: @user.errors.full_messages }, status: :unprocessable_content
+          render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
         end
       end
 
