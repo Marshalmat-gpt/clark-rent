@@ -2,22 +2,33 @@ require_relative 'boot'
 require 'rails/all'
 Bundler.require(*Rails.groups)
 
-# Fix FrozenError: Rails 7.2 + Zeitwerk freezes ActiveSupport::Dependencies.autoload_paths
-# before all engine initializers run. AMS 0.10.16's inherited Engine initializer calls
-# autoload_paths.unshift() which raises FrozenError on the frozen array.
-# Prevent freeze by defining a no-op singleton method on both path arrays.
+# Compatibility fix for AMS 0.10.16 + Rails 7.2 (Zeitwerk):
+# Rails 7.2 reassigns ActiveSupport::Dependencies.autoload_paths to a new array
+# during initialize! and freezes it. AMS's Engine initializer then calls unshift()
+# on the frozen array => FrozenError at railties/engine.rb:579.
+#
+# Fix: prepend to the singleton class so every future assignment also gets a
+# no-op freeze singleton. Also patch the current arrays immediately.
 if defined?(ActiveSupport::Dependencies)
-  [ActiveSupport::Dependencies.autoload_paths,
-   ActiveSupport::Dependencies.autoload_once_paths].each do |arr|
-    arr.define_singleton_method(:freeze) { self }
-  end
+  ActiveSupport::Dependencies.singleton_class.prepend(Module.new do
+    def autoload_paths=(val)
+      super
+      autoload_paths.define_singleton_method(:freeze) { self } rescue nil
+    end
+    def autoload_once_paths=(val)
+      super
+      autoload_once_paths.define_singleton_method(:freeze) { self } rescue nil
+    end
+  end)
+  begin; ActiveSupport::Dependencies.autoload_paths.define_singleton_method(:freeze) { self }; rescue; end
+  begin; ActiveSupport::Dependencies.autoload_once_paths.define_singleton_method(:freeze) { self }; rescue; end
 end
 
 # Fix TSort::Cyclic: AMS 0.10.16 registers 'active_model_serializers.set_configs'
 # with after: 'action_controller.set_configs', which creates a cyclic dependency
 # in Rails 7.2's initializer tsort graph.
-# This fix removes the problematic initializer before initialize! builds the tsort graph.
-# AMS logger/caching wiring is handled separately in ams_logger.rb.
+# Removes the problematic initializer before initialize! builds the tsort graph.
+# AMS logger wiring is handled separately in config/initializers/ams_logger.rb.
 if defined?(ActiveModelSerializers::Railtie)
   ActiveModelSerializers::Railtie.class_eval do
     if @initializers
