@@ -2,13 +2,10 @@ require_relative 'boot'
 require 'rails/all'
 Bundler.require(*Rails.groups)
 
-# Compatibility fix for AMS 0.10.16 + Rails 7.2 (Zeitwerk):
-# Rails 7.2 reassigns ActiveSupport::Dependencies.autoload_paths to a new array
-# during initialize! and freezes it. AMS's Engine initializer then calls unshift()
-# on the frozen array => FrozenError at railties/engine.rb:579.
-#
-# Fix: prepend to the singleton class so every future assignment also gets a
-# no-op freeze singleton. Also patch the current arrays immediately.
+# Compatibility fix for AMS 0.10.16 + Rails 7.2:
+# Rails 7.2 freezes ActiveSupport::Dependencies.autoload_paths (via Zeitwerk setup)
+# before all engine initializers run. Intercept the setter so any newly assigned
+# array also gets a no-op freeze singleton. Belt-and-suspenders: patch current arrays too.
 if defined?(ActiveSupport::Dependencies)
   ActiveSupport::Dependencies.singleton_class.prepend(Module.new do
     def autoload_paths=(val)
@@ -24,10 +21,9 @@ if defined?(ActiveSupport::Dependencies)
   begin; ActiveSupport::Dependencies.autoload_once_paths.define_singleton_method(:freeze) { self }; rescue; end
 end
 
-# Fix TSort::Cyclic: AMS 0.10.16 registers 'active_model_serializers.set_configs'
-# with after: 'action_controller.set_configs', which creates a cyclic dependency
-# in Rails 7.2's initializer tsort graph.
-# Removes the problematic initializer before initialize! builds the tsort graph.
+# Fix TSort::Cyclic: AMS 0.10.16 'active_model_serializers.set_configs' initializer
+# declares after: 'action_controller.set_configs', creating a cycle in Rails 7.2's
+# initializer tsort graph. Remove it before initialize! builds the graph.
 # AMS logger wiring is handled separately in config/initializers/ams_logger.rb.
 if defined?(ActiveModelSerializers::Railtie)
   ActiveModelSerializers::Railtie.class_eval do
@@ -50,5 +46,13 @@ module ClarkRent
     config.api_only = true
     config.time_zone = 'Paris'
     config.i18n.default_locale = :fr
+
+    # Fix FrozenError at railties/engine.rb:598:
+    # Rails 7.2 freezes routes_reloader.paths before AMS 0.10.16's inherited Engine
+    # add_routing_paths initializer calls unshift() on it.
+    # Running before :add_routing_paths ensures the no-op freeze is in place first.
+    initializer :fix_routes_reloader_freeze, before: :add_routing_paths do |app|
+      app.routes_reloader.paths.define_singleton_method(:freeze) { self }
+    end
   end
 end
