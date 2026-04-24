@@ -12,10 +12,9 @@ development:
 
 test:
   <<: *default
-  database: clark_test
-  username: <%= ENV.fetch('DB_USERNAME', 'clark') %>
-  password: <%= ENV.fetch('DB_PASSWORD', 'clark') %>
-  host: <%= ENV.fetch('DB_HOST', 'localhost') %>
+  # Use DATABASE_URL when set (CI), fall back to individual env vars for local dev.
+  # Using `url:` ensures Rails 7.2 picks up the connection string unambiguously.
+  url: <%= ENV.fetch('DATABASE_URL', "postgresql://#{ENV.fetch('DB_USERNAME', 'clark')}:#{ENV.fetch('DB_PASSWORD', 'clark')}@#{ENV.fetch('DB_HOST', 'localhost')}/clark_test") %>
 
 production:
   <<: *default
