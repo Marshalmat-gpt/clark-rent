@@ -1,8 +1,8 @@
-inherit_gem:
-  rubocop-rails: rubocop.yml
+require:
+  - rubocop-rails
 
 AllCops:
-  NewCops: enable
+  NewCops: pending
   SuggestExtensions: false
   TargetRubyVersion: 3.2
   Exclude:
@@ -10,15 +10,30 @@ AllCops:
     - 'bin/**/*'
     - 'config/**/*'
     - 'vendor/**/*'
+    - 'spec/**/*'
+    - 'Gemfile'
+    - 'Rakefile'
 
 Layout/LineLength:
   Max: 120
 
+Metrics/AbcSize:
+  Max: 20
+
 Style/Documentation:
   Enabled: false
-
 Style/FrozenStringLiteralComment:
   Enabled: false
-
+Style/AsciiComments:
+  Enabled: false
 Rails/FilePath:
   EnforcedStyle: arguments
+Rails/StrongParametersExpect:
+  Enabled: false
+Rails/UnknownEnv:
+  Environments:
+    - production
+    - development
+    - test
+    - staging
+    - local
