@@ -7,7 +7,7 @@ RUN apt-get update -qq && \
 
 WORKDIR /app
 COPY Gemfile Gemfile.lock ./
-RUN bundle install --without development test
+RUN bundle config set --local without 'development test' && bundle install
 
 # Stage 2: Runtime — lean image without build tools
 FROM ruby:3.2.2-slim
