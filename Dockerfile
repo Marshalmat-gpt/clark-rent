@@ -24,6 +24,10 @@ WORKDIR /app
 COPY --from=builder /usr/local/bundle /usr/local/bundle
 COPY --chown=clark:clark . .
 
+# Puma needs tmp/pids to write its pidfile
+RUN mkdir -p tmp/pids tmp/cache tmp/sockets log && \
+    chown -R clark:clark tmp log
+
 RUN chmod +x bin/docker-entrypoint
 
 USER clark
