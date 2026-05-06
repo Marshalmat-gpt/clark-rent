@@ -27,7 +27,7 @@ class S3Service
       signer = Aws::S3::Presigner.new(client: client)
       signer.presigned_url(:get_object,
                            bucket: RAILS_S3_BUCKET,
-                           key:    key,
+                           key: key,
                            expires_in: expires_in.to_i)
     end
 
@@ -35,10 +35,11 @@ class S3Service
     # Retourne le key S3 si succès, raise en cas d'erreur
     def upload(file:, key:, content_type: 'application/octet-stream', acl: 'private')
       client.put_object(
-        bucket:       RAILS_S3_BUCKET,
-        key:          key,
-        body:         file,
+        bucket: RAILS_S3_BUCKET,
+        key: key,
+        body: file,
         content_type: content_type,
+        acl: acl,
         server_side_encryption: 'AES256'
       )
       key
