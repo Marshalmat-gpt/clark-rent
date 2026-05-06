@@ -6,7 +6,7 @@
 # `bin/rails db:schema:load`. When creating a portable database, use this file
 # to create the initial database.
 
-ActiveRecord::Schema[7.2].define(version: 2026_04_17_000003) do
+ActiveRecord::Schema[7.2].define(version: 2026_05_07_000002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -41,6 +41,45 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_17_000003) do
     t.index ["property_id"], name: "index_rooms_on_property_id"
   end
 
+  create_table "leases", force: :cascade do |t|
+    t.bigint "tenant_id", null: false
+    t.bigint "room_id", null: false
+    t.date "start_date", null: false
+    t.date "end_date"
+    t.decimal "monthly_rent", precision: 10, scale: 2, null: false
+    t.decimal "monthly_charges", precision: 10, scale: 2, default: "0.0", null: false
+    t.decimal "deposit", precision: 10, scale: 2, default: "0.0", null: false
+    t.string "status", default: "active", null: false
+    t.datetime "signed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["room_id", "status"], name: "index_leases_on_room_id_and_status"
+    t.index ["room_id"], name: "index_leases_on_room_id"
+    t.index ["status"], name: "index_leases_on_status"
+    t.index ["tenant_id"], name: "index_leases_on_tenant_id"
+  end
+
+  create_table "lease_applications", force: :cascade do |t|
+    t.bigint "tenant_id", null: false
+    t.bigint "room_id", null: false
+    t.string "status", default: "pending", null: false
+    t.text "message"
+    t.datetime "validated_at"
+    t.bigint "validated_by_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["room_id"], name: "index_lease_applications_on_room_id"
+    t.index ["status"], name: "index_lease_applications_on_status"
+    t.index ["tenant_id", "room_id"], name: "index_lease_applications_on_tenant_and_room", unique: true
+    t.index ["tenant_id"], name: "index_lease_applications_on_tenant_id"
+    t.index ["validated_by_id"], name: "index_lease_applications_on_validated_by_id"
+  end
+
   add_foreign_key "properties", "users"
   add_foreign_key "rooms", "properties"
+  add_foreign_key "leases", "rooms"
+  add_foreign_key "leases", "users", column: "tenant_id"
+  add_foreign_key "lease_applications", "rooms"
+  add_foreign_key "lease_applications", "users", column: "tenant_id"
+  add_foreign_key "lease_applications", "users", column: "validated_by_id"
 end

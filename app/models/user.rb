@@ -1,7 +1,9 @@
 class User < ApplicationRecord
   has_secure_password
 
-  has_many :properties, dependent: :destroy
+  has_many :properties,         dependent: :destroy
+  has_many :leases,             foreign_key: :tenant_id, dependent: :destroy, inverse_of: :tenant
+  has_many :lease_applications, foreign_key: :tenant_id, dependent: :destroy, inverse_of: :tenant
 
   ROLES = %w[landlord tenant].freeze
 

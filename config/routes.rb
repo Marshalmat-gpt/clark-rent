@@ -14,7 +14,10 @@ Rails.application.routes.draw do
       end
       resources :rooms, only: [:create, :update, :destroy, :index]
 
-      # Milestone 1.5 — Lease Applications
+      # Milestone 2 — Leases + Applications
+      resources :leases, only: [:create, :update, :destroy, :index, :show] do
+        member { patch :terminate }
+      end
       resources :lease_applications, only: [:create, :update, :destroy, :show, :index] do
         member { patch :validate }
       end
