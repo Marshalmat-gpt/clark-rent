@@ -45,7 +45,6 @@ group :development, :test do
   gem 'dotenv-rails'
   gem 'database_cleaner-active_record', '~> 2.1'
   gem 'shoulda-matchers', '~> 5.3'
-  gem 'brakeman', require: false
 end
 
 group :development do
