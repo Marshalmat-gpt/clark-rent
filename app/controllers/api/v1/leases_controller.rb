@@ -12,9 +12,9 @@ module Api
 
       def create
         room = Room.find(lease_params[:room_id])
-        authorize_landlord_for!(room)
-        lease = Lease.new(lease_params.except(:room_id).merge(room: room))
+        return forbidden unless owns_room?(room)
 
+        lease = Lease.new(lease_params.except(:room_id).merge(room: room))
         if lease.save
           render json: lease, serializer: LeaseSerializer, status: :created
         else
@@ -23,7 +23,8 @@ module Api
       end
 
       def update
-        authorize_landlord!
+        return forbidden unless owns_room?(@lease.room)
+
         if @lease.update(lease_update_params)
           render json: @lease, serializer: LeaseSerializer
         else
@@ -32,13 +33,15 @@ module Api
       end
 
       def destroy
-        authorize_landlord!
+        return forbidden unless owns_room?(@lease.room)
+
         @lease.destroy
         render json: { message: 'Lease deleted' }, status: :ok
       end
 
       def terminate
-        authorize_landlord!
+        return forbidden unless owns_room?(@lease.room)
+
         if @lease.update(status: 'terminated', end_date: Date.current)
           render json: @lease, serializer: LeaseSerializer
         else
@@ -52,7 +55,6 @@ module Api
         @lease = current_user_leases.find(params[:id])
       end
 
-      # Landlords see leases on their rooms; tenants see their own.
       def current_user_leases
         if current_user.role == 'landlord'
           Lease.joins(room: :property).where(properties: { user_id: current_user.id })
@@ -61,14 +63,12 @@ module Api
         end
       end
 
-      def authorize_landlord!
-        authorize_landlord_for!(@lease.room)
+      def owns_room?(room)
+        current_user.role == 'landlord' && room.property.user_id == current_user.id
       end
 
-      def authorize_landlord_for!(room)
-        return if current_user.role == 'landlord' && room.property.user_id == current_user.id
-
-        render json: { error: 'Forbidden' }, status: :forbidden and return
+      def forbidden
+        render json: { error: 'Forbidden' }, status: :forbidden
       end
 
       def lease_params

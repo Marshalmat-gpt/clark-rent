@@ -20,7 +20,8 @@ module Api
       end
 
       def update
-        authorize_owner!
+        return forbidden unless owner?
+
         if @application.update(update_params)
           render json: @application, serializer: LeaseApplicationSerializer
         else
@@ -29,7 +30,8 @@ module Api
       end
 
       def destroy
-        authorize_owner!
+        return forbidden unless owner?
+
         @application.destroy
         render json: { message: 'Application deleted' }, status: :ok
       end
@@ -37,7 +39,7 @@ module Api
       # PATCH /api/v1/lease_applications/:id/validate
       # Body: { decision: "approved" | "rejected" }
       def validate
-        authorize_landlord!
+        return forbidden unless landlord_for_room?
         return render_invalid_decision unless %w[approved rejected].include?(params[:decision].to_s)
 
         method = params[:decision] == 'approved' ? :approve! : :reject!
@@ -63,17 +65,16 @@ module Api
         end
       end
 
-      def authorize_owner!
-        return if @application.tenant_id == current_user.id
-
-        render json: { error: 'Forbidden' }, status: :forbidden and return
+      def owner?
+        @application.tenant_id == current_user.id
       end
 
-      def authorize_landlord!
-        return if current_user.role == 'landlord' &&
-                  @application.room.property.user_id == current_user.id
+      def landlord_for_room?
+        current_user.role == 'landlord' && @application.room.property.user_id == current_user.id
+      end
 
-        render json: { error: 'Forbidden' }, status: :forbidden and return
+      def forbidden
+        render json: { error: 'Forbidden' }, status: :forbidden
       end
 
       def create_params
