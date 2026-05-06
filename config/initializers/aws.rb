@@ -1,3 +1,5 @@
+require 'aws-sdk-s3'
+
 # Initialise le client S3 global — disponible via Aws::S3::Client.new
 # Les credentials viennent exclusivement des variables d'environnement.
 Aws.config.update(
