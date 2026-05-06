@@ -4,7 +4,12 @@ module Api
       skip_before_action :authenticate_user!, only: %i[create]
       before_action :set_user, only: %i[show update destroy]
 
-      def index = render json: User.order(:created_at), each_serializer: UserSerializer
+      def index
+        return render json: { error: 'Forbidden' }, status: :forbidden unless current_user.role == 'landlord'
+
+        render json: User.order(:created_at), each_serializer: UserSerializer
+      end
+
       def show = render json: @user, serializer: UserSerializer
 
       def create
@@ -46,7 +51,9 @@ module Api
         render json: { error: 'Forbidden' }, status: :forbidden
       end
 
-      def user_params = params.permit(:email, :password, :first_name, :last_name, :role)
+      # :role excluded — self-assignment of role is not permitted.
+      # Role is set to the DB default ('tenant') on creation.
+      def user_params = params.permit(:email, :password, :first_name, :last_name)
     end
   end
 end

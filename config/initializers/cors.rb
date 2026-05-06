@@ -9,7 +9,7 @@ Rails.application.config.middleware.insert_before 0, Rack::Cors do
     origins(cors_origins.size == 1 ? cors_origins.first : cors_origins)
 
     resource '*',
-             headers: :any,
+             headers: %w[Authorization Content-Type Accept],
              methods: %i[get post put patch delete options head],
              expose: ['Authorization']
   end
