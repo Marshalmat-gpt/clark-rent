@@ -21,9 +21,9 @@ module ClarkAgent
       properties = user.properties.includes(rooms: :leases)
       {
         properties_count: properties.size,
-        active_leases_count: properties.sum { |p|
+        active_leases_count: properties.sum do |p|
           p.rooms.sum { |r| r.leases.count { |l| l.status == 'active' } }
-        },
+        end,
         open_tickets_count: Ticket.for_owner(user).open.count
       }
     end
