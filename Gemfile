@@ -34,6 +34,11 @@ gem 'twilio-ruby', '~> 7.0'
 # CORS
 gem 'rack-cors', '~> 2.0'
 
+# Observability
+gem 'lograge', '~> 0.14'
+gem 'sentry-ruby', '~> 5.20'
+gem 'sentry-rails', '~> 5.20'
+
 # Serialization
 gem 'active_model_serializers', '~> 0.10'
 
