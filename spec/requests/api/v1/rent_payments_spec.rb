@@ -70,10 +70,20 @@ RSpec.describe 'Api::V1::RentPayments', type: :request do
   describe 'PATCH /api/v1/rent_payments/:id/mark_paid' do
     let(:payment) { create(:rent_payment, lease: lease, tenant: tenant) }
 
-    it 'landlord marks payment as paid' do
-      patch "/api/v1/rent_payments/#{payment.id}/mark_paid",
-            params: { payment_method: 'virement' },
-            headers: auth_headers(landlord)
+    it 'landlord marks payment as paid + enqueues receipt mailer' do
+      ActiveJob::Base.queue_adapter = :test
+
+      expect do
+        patch "/api/v1/rent_payments/#{payment.id}/mark_paid",
+              params: { payment_method: 'virement' },
+              headers: auth_headers(landlord)
+      end.to have_enqueued_job(SendNotificationJob).with(
+        hash_including(
+          channel: 'email',
+          recipient: tenant.email,
+          payload: hash_including(mailer: 'ReceiptMailer', action: 'delivered')
+        )
+      )
 
       expect(response).to have_http_status(:ok)
       expect(payment.reload).to have_attributes(status: 'paid', payment_method: 'virement')

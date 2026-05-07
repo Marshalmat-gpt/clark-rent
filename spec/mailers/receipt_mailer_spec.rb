@@ -6,13 +6,13 @@ RSpec.describe ReceiptMailer, type: :mailer do
   let(:property) { create(:property, user: landlord) }
   let(:room)     { create(:room, property: property) }
   let(:lease)    { create(:lease, room: room, tenant: tenant) }
-  let(:pdf_io)   { StringIO.new('%PDF-1.4 fake pdf bytes') }
+  let(:pdf_bytes) { '%PDF-1.4 fake pdf bytes'.b }
 
   it 'attaches the PDF to the email' do
     mail = described_class.delivered(
       lease_id: lease.id,
       period: Date.new(2026, 4, 1),
-      pdf_io: pdf_io
+      pdf_bytes: pdf_bytes
     )
 
     expect(mail.to).to eq(['tenant@example.com'])

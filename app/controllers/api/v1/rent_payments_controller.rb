@@ -29,10 +29,29 @@ module Api
 
         method = params[:payment_method].presence
         @payment.mark_as_paid!(method: method)
+        enqueue_receipt(@payment)
         render json: @payment, serializer: RentPaymentSerializer
       end
 
       private
+
+      def enqueue_receipt(payment)
+        period = payment.due_date.beginning_of_month
+        pdf_bytes = ClarkAgent::ReceiptPdf.new(lease: payment.lease, period: period).render.read
+        SendNotificationJob.perform_later(
+          channel: 'email',
+          recipient: payment.tenant.email,
+          payload: {
+            mailer: 'ReceiptMailer',
+            action: 'delivered',
+            args: {
+              lease_id: payment.lease_id,
+              period: period.to_s,
+              pdf_bytes: Base64.strict_encode64(pdf_bytes)
+            }
+          }
+        )
+      end
 
       def set_payment
         @payment = scoped_payments.find(params[:id])
