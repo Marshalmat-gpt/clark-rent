@@ -14,7 +14,7 @@ class Ticket < ApplicationRecord
 
   scope :open,      -> { where(status: %w[open assigned]) }
   scope :urgent,    -> { where(priority: 'urgent') }
-  scope :for_owner, ->(user) { joins(:property).where(properties: { owner_id: user.id }) }
+  scope :for_owner, ->(user) { joins(:property).where(properties: { user_id: user.id }) }
 
   def resolve!
     update!(status: 'resolved', resolved_at: Time.current)
