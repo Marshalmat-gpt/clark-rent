@@ -1,6 +1,7 @@
+# rubocop:disable Metrics/ClassLength, Metrics/MethodLength, Metrics/CyclomaticComplexity
 module ClarkAgent
   class ToolExecutor
-    def self.execute(name:, input:, user:, role:)
+    def self.execute(name:, input:, user:, _role:)
       case name
       when 'get_my_lease'           then get_my_lease(user)
       when 'get_payment_history'    then get_payment_history(user, input)
@@ -15,7 +16,7 @@ module ClarkAgent
       else
         { content: { error: "Outil inconnu : #{name}" } }
       end
-    rescue => e
+    rescue StandardError => e
       Rails.logger.error "[ToolExecutor] #{name} failed: #{e.message}\n#{e.backtrace.first(3).join("\n")}"
       { content: { error: e.message } }
     end
@@ -28,19 +29,19 @@ module ClarkAgent
 
       {
         content: {
-          id:             lease.id,
-          status:         lease.status,
-          amount:         lease.amount,
+          id: lease.id,
+          status: lease.status,
+          amount: lease.amount,
           expense_amount: lease.expense_amount,
-          start_date:     lease.start_date&.strftime('%d/%m/%Y'),
-          end_date:       lease.end_date&.strftime('%d/%m/%Y'),
-          days_to_expiry: lease.end_date ? (lease.end_date - Date.today).to_i : nil,
+          start_date: lease.start_date&.strftime('%d/%m/%Y'),
+          end_date: lease.end_date&.strftime('%d/%m/%Y'),
+          days_to_expiry: lease.end_date ? (lease.end_date - Time.zone.today).to_i : nil,
           property: {
             address: lease.property.formatted_address,
-            type:    lease.property.property_type,
+            type: lease.property.property_type,
             surface: lease.property.area,
-            city:    lease.property.city,
-            energy:  lease.property.energy
+            city: lease.property.city,
+            energy: lease.property.energy
           }
         }
       }
@@ -57,9 +58,9 @@ module ClarkAgent
         content: {
           payments: payments.map { |p|
             {
-              month:   p.paid_at&.strftime('%B %Y'),
-              amount:  p.amount,
-              status:  p.status,
+              month: p.paid_at&.strftime('%B %Y'),
+              amount: p.amount,
+              status: p.status,
               paid_at: p.paid_at&.strftime('%d/%m/%Y')
             }
           },
@@ -74,28 +75,28 @@ module ClarkAgent
       return { content: { error: 'Aucun bail actif.' } } unless lease
 
       ticket = Ticket.create!(
-        property:    lease.property,
-        tenant:      user,
-        category:    input['category'],
+        property: lease.property,
+        tenant: user,
+        category: input['category'],
         description: input['description'],
-        priority:    input['priority'] || 'normal',
-        status:      'open'
+        priority: input['priority'] || 'normal',
+        status: 'open'
       )
 
       # Notifier le propriétaire de façon asynchrone
       OwnerNotificationJob.perform_later(
-        owner_id:  lease.property.owner_id,
+        owner_id: lease.property.owner_id,
         ticket_id: ticket.id,
-        channel:   :email
+        channel: :email
       )
 
       {
         content: {
-          ticket_id:          ticket.id,
-          status:             ticket.status,
-          priority:           ticket.priority,
+          ticket_id: ticket.id,
+          status: ticket.status,
+          priority: ticket.priority,
           estimated_response: ticket.priority == 'urgent' ? '24h' : '72h',
-          message:            "Ticket ##{ticket.id} créé. Votre propriétaire a été notifié."
+          message: "Ticket ##{ticket.id} créé. Votre propriétaire a été notifié."
         }
       }
     end
@@ -109,12 +110,12 @@ module ClarkAgent
         content: {
           tickets: scope.map { |t|
             {
-              id:          t.id,
-              category:    t.category,
+              id: t.id,
+              category: t.category,
               description: t.description,
-              status:      t.status,
-              priority:    t.priority,
-              created_at:  t.created_at.strftime('%d/%m/%Y'),
+              status: t.status,
+              priority: t.priority,
+              created_at: t.created_at.strftime('%d/%m/%Y'),
               assigned_to: t.assigned_to&.full_name,
               resolved_at: t.resolved_at&.strftime('%d/%m/%Y')
             }
@@ -134,6 +135,7 @@ module ClarkAgent
               month   = Date.parse("#{input['month']}-01")
               payment = lease.rent_payments.find_by('paid_at >= ? AND paid_at <= ?', month.beginning_of_month, month.end_of_month)
               return { content: { error: "Quittance introuvable pour #{input['month']}." } } unless payment
+
               presigned_url(payment.receipt)
             when 'residence_certificate'
               ResidenceCertificateGenerator.generate_url(lease: lease)
@@ -147,14 +149,14 @@ module ClarkAgent
 
       {
         content: {
-          url:        url,
+          url: url,
           expires_in: '1 heure',
-          type:       input['document_type']
+          type: input['document_type']
         },
         # action renvoyée au frontend pour afficher un bouton de téléchargement
         action: {
-          type:  'download_url',
-          url:   url,
+          type: 'download_url',
+          url: url,
           label: document_label(input['document_type'], input['month'])
         }
       }
@@ -170,25 +172,25 @@ module ClarkAgent
 
       {
         content: {
-          count:      props.count,
+          count: props.count,
           properties: props.map { |p|
-            lease      = p.leases.order(created_at: :desc).first
-            open_tkts  = p.tickets.open.count
+            lease     = p.leases.order(created_at: :desc).first
+            open_tkts = p.tickets.open.count
 
             alerts = []
-            alerts << "⚠️ Bail expire dans #{(lease.end_date - Date.today).to_i}j" if lease&.end_date && (lease.end_date - Date.today).to_i <= 60
+            alerts << "⚠️ Bail expire dans #{(lease.end_date - Time.zone.today).to_i}j" if lease&.end_date && (lease.end_date - Time.zone.today).to_i <= 60
             alerts << "🚨 #{open_tkts} ticket(s) ouvert(s)" if open_tkts > 0
 
             {
-              id:           p.id,
-              address:      p.formatted_address,
-              city:         p.city,
-              surface:      p.area,
+              id: p.id,
+              address: p.formatted_address,
+              city: p.city,
+              surface: p.area,
               lease_status: lease&.status || 'no_lease',
-              rent:         lease&.amount,
-              tenant:       lease&.tenant&.full_name,
+              rent: lease&.amount,
+              tenant: lease&.tenant&.full_name,
               open_tickets: open_tkts,
-              alerts:       alerts
+              alerts: alerts
             }
           }
         }
@@ -202,32 +204,32 @@ module ClarkAgent
       {
         content: {
           property: {
-            id:       property.id,
-            address:  property.formatted_address,
-            surface:  property.area,
-            type:     property.property_type,
-            energy:   property.energy,
+            id: property.id,
+            address: property.formatted_address,
+            surface: property.area,
+            type: property.property_type,
+            energy: property.energy,
             dpe_date: property.date_dpe&.strftime('%d/%m/%Y'),
-            floors:   property.floor
+            floors: property.floor
           },
           lease: lease ? {
-            id:             lease.id,
-            status:         lease.status,
-            amount:         lease.amount,
+            id: lease.id,
+            status: lease.status,
+            amount: lease.amount,
             expense_amount: lease.expense_amount,
-            tenant:         lease.tenant&.full_name,
-            tenant_phone:   lease.tenant&.phone,
-            start_date:     lease.start_date&.strftime('%d/%m/%Y'),
-            end_date:       lease.end_date&.strftime('%d/%m/%Y'),
-            days_to_expiry: lease.end_date ? (lease.end_date - Date.today).to_i : nil
+            tenant: lease.tenant&.full_name,
+            tenant_phone: lease.tenant&.phone,
+            start_date: lease.start_date&.strftime('%d/%m/%Y'),
+            end_date: lease.end_date&.strftime('%d/%m/%Y'),
+            days_to_expiry: lease.end_date ? (lease.end_date - Time.zone.today).to_i : nil
           } : nil,
           recent_tickets: property.tickets.order(created_at: :desc).limit(5).map { |t|
             {
-              id:       t.id,
+              id: t.id,
               category: t.category,
-              status:   t.status,
+              status: t.status,
               priority: t.priority,
-              date:     t.created_at.strftime('%d/%m/%Y')
+              date: t.created_at.strftime('%d/%m/%Y')
             }
           }
         }
@@ -248,13 +250,13 @@ module ClarkAgent
 
       {
         content: {
-          lease_id:     lease.id,
+          lease_id: lease.id,
           applications: apps.map { |a|
             {
-              id:          a.id,
-              status:      a.status,
-              applicant:   a.applicant&.full_name,
-              email:       a.applicant&.email,
+              id: a.id,
+              status: a.status,
+              applicant: a.applicant&.full_name,
+              email: a.applicant&.email,
               description: a.description,
               submitted_at: a.created_at.strftime('%d/%m/%Y')
             }
@@ -277,21 +279,21 @@ module ClarkAgent
       delta         = (new_rent - lease.amount).round(2)
       revision_date = lease.start_date&.then { |d|
         # Prochaine date anniversaire du bail
-        this_year = d.change(year: Date.today.year)
-        this_year < Date.today ? this_year.next_year : this_year
+        this_year = d.change(year: Time.zone.today.year)
+        this_year < Time.zone.today ? this_year.next_year : this_year
       }
 
       {
         content: {
-          current_rent:   lease.amount,
-          new_rent:       new_rent,
-          delta:          delta,
-          delta_percent:  ((delta / lease.amount) * 100).round(2),
-          irl_applied:    irl_current,
-          irl_reference:  irl_reference,
-          revision_date:  revision_date&.strftime('%d/%m/%Y'),
-          annual_gain:    (delta * 12).round(2),
-          tenant:         lease.tenant&.full_name
+          current_rent: lease.amount,
+          new_rent: new_rent,
+          delta: delta,
+          delta_percent: ((delta / lease.amount) * 100).round(2),
+          irl_applied: irl_current,
+          irl_reference: irl_reference,
+          revision_date: revision_date&.strftime('%d/%m/%Y'),
+          annual_gain: (delta * 12).round(2),
+          tenant: lease.tenant&.full_name
         }
       }
     end
@@ -303,29 +305,29 @@ module ClarkAgent
 
       return { content: { error: 'Bail introuvable.' } } unless lease
 
-      month  = Date.parse("#{input['month']}-01")
-      pdf    = RentReceiptGenerator.generate(lease: lease, month: month)
-      key    = "receipts/#{lease.id}/#{input['month']}.pdf"
-      url    = upload_to_s3(pdf, key)
+      month = Date.parse("#{input['month']}-01")
+      pdf   = RentReceiptGenerator.generate(lease: lease, month: month)
+      key   = "receipts/#{lease.id}/#{input['month']}.pdf"
+      url   = upload_to_s3(pdf, key)
 
       # Envoyer par email au locataire
       TenantMailer.rent_receipt(
         lease: lease,
         month: month,
-        url:   url
+        url: url
       ).deliver_later
 
       {
         content: {
-          url:     url,
-          month:   month.strftime('%B %Y'),
-          tenant:  lease.tenant&.full_name,
-          amount:  lease.amount + (lease.expense_amount || 0),
+          url: url,
+          month: month.strftime('%B %Y'),
+          tenant: lease.tenant&.full_name,
+          amount: lease.amount + (lease.expense_amount || 0),
           message: "Quittance générée et envoyée à #{lease.tenant&.full_name} par email."
         },
         action: {
-          type:  'download_url',
-          url:   url,
+          type: 'download_url',
+          url: url,
           label: "Quittance #{month.strftime('%B %Y')}"
         }
       }
@@ -335,6 +337,7 @@ module ClarkAgent
 
     def self.presigned_url(attachment)
       return nil unless attachment&.attached?
+
       attachment.blob.service_url(expires_in: 1.hour)
     end
 
@@ -347,12 +350,13 @@ module ClarkAgent
 
     def self.document_label(type, month = nil)
       case type
-      when 'lease'                  then 'Télécharger le bail'
-      when 'receipt'                then "Quittance #{month}"
-      when 'residence_certificate'  then 'Attestation de résidence'
-      when 'inventory'              then "État des lieux"
+      when 'lease'                 then 'Télécharger le bail'
+      when 'receipt'               then "Quittance #{month}"
+      when 'residence_certificate' then 'Attestation de résidence'
+      when 'inventory'             then "État des lieux"
       else 'Télécharger le document'
       end
     end
   end
 end
+# rubocop:enable Metrics/ClassLength, Metrics/MethodLength, Metrics/CyclomaticComplexity
