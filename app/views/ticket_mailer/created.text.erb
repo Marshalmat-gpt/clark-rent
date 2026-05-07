@@ -1,9 +1,9 @@
 Nouveau ticket déclaré.
 
-Titre : <%= @ticket.title %>
+Catégorie : <%= @ticket.category %>
 Priorité : <%= @ticket.priority %>
-Logement : <%= @ticket.room.property.address %> — <%= @ticket.room.name %>
-Déclarant : <%= @ticket.reporter.first_name %> <%= @ticket.reporter.last_name %>
+Logement : <%= @ticket.property.address %>
+Déclarant : <%= @ticket.tenant.first_name %> <%= @ticket.tenant.last_name %>
 
 Description :
 <%= @ticket.description %>

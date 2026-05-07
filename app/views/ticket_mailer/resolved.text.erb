@@ -1,5 +1,5 @@
-Bonjour <%= @ticket.reporter.first_name %>,
+Bonjour <%= @ticket.tenant.first_name %>,
 
-Le ticket « <%= @ticket.title %> » a été résolu le <%= I18n.l(@ticket.resolved_at, format: :long) rescue 'aujourd''hui' %>.
+Le ticket "<%= @ticket.description.to_s.lines.first&.strip %>" a été résolu.
 
 Si le problème persiste, vous pouvez rouvrir un ticket depuis votre espace.

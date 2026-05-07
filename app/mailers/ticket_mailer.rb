@@ -1,12 +1,18 @@
 class TicketMailer < ApplicationMailer
   def created(ticket_id)
     @ticket   = Ticket.find(ticket_id)
-    landlord  = @ticket.room.property.user
-    mail(to: landlord.email, subject: "[Ticket] #{@ticket.title}")
+    landlord  = @ticket.property.user
+    mail(to: landlord.email, subject: "[Ticket] #{ticket_subject}")
   end
 
   def resolved(ticket_id)
     @ticket = Ticket.find(ticket_id)
-    mail(to: @ticket.reporter.email, subject: "Ticket résolu : #{@ticket.title}")
+    mail(to: @ticket.tenant.email, subject: "Ticket résolu : #{ticket_subject}")
+  end
+
+  private
+
+  def ticket_subject
+    @ticket.description.to_s.lines.first&.strip&.truncate(50) || @ticket.category.to_s.humanize
   end
 end
