@@ -1,15 +1,20 @@
 class Ticket < ApplicationRecord
-  STATUSES   = %w[open in_progress resolved closed].freeze
-  PRIORITIES = %w[low normal high urgent].freeze
+  belongs_to :property
+  belongs_to :tenant, class_name: 'User', inverse_of: :tenant_tickets
+  belongs_to :assigned_to, class_name: 'User', optional: true, inverse_of: :assigned_tickets
 
-  belongs_to :reporter, class_name: 'User'
-  belongs_to :room
+  CATEGORIES = %w[plomberie electricite chauffage serrurerie autre].freeze
+  STATUSES   = %w[open assigned resolved closed].freeze
+  PRIORITIES = %w[normal urgent].freeze
 
-  validates :title, presence: true
-  validates :status,   inclusion: { in: STATUSES }
-  validates :priority, inclusion: { in: PRIORITIES }
+  validates :category,    inclusion: { in: CATEGORIES }
+  validates :status,      inclusion: { in: STATUSES }
+  validates :priority,    inclusion: { in: PRIORITIES }
+  validates :description, presence: true
 
-  scope :open_tickets, -> { where(status: %w[open in_progress]) }
+  scope :open,      -> { where(status: %w[open assigned]) }
+  scope :urgent,    -> { where(priority: 'urgent') }
+  scope :for_owner, ->(user) { joins(:property).where(properties: { owner_id: user.id }) }
 
   def resolve!
     update!(status: 'resolved', resolved_at: Time.current)
