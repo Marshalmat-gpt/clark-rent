@@ -6,7 +6,7 @@
 # `bin/rails db:schema:load`. When creating a portable database, use this file
 # to create the initial database.
 
-ActiveRecord::Schema[7.2].define(version: 2026_05_07_000002) do
+ActiveRecord::Schema[7.2].define(version: 2026_05_07_000003) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -75,6 +75,23 @@ ActiveRecord::Schema[7.2].define(version: 2026_05_07_000002) do
     t.index ["validated_by_id"], name: "index_lease_applications_on_validated_by_id"
   end
 
+
+  create_table "tickets", force: :cascade do |t|
+    t.bigint "reporter_id", null: false
+    t.bigint "room_id", null: false
+    t.string "title", null: false
+    t.text "description"
+    t.string "status", default: "open", null: false
+    t.string "priority", default: "normal", null: false
+    t.datetime "resolved_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["priority"], name: "index_tickets_on_priority"
+    t.index ["reporter_id"], name: "index_tickets_on_reporter_id"
+    t.index ["room_id"], name: "index_tickets_on_room_id"
+    t.index ["status"], name: "index_tickets_on_status"
+  end
+
   add_foreign_key "properties", "users"
   add_foreign_key "rooms", "properties"
   add_foreign_key "leases", "rooms"
@@ -82,4 +99,6 @@ ActiveRecord::Schema[7.2].define(version: 2026_05_07_000002) do
   add_foreign_key "lease_applications", "rooms"
   add_foreign_key "lease_applications", "users", column: "tenant_id"
   add_foreign_key "lease_applications", "users", column: "validated_by_id"
+  add_foreign_key "tickets", "rooms"
+  add_foreign_key "tickets", "users", column: "reporter_id"
 end

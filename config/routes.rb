@@ -21,6 +21,18 @@ Rails.application.routes.draw do
       resources :lease_applications, only: [:create, :update, :destroy, :show, :index] do
         member { patch :validate }
       end
+
+      # Milestone 3 — AI agent layer
+      namespace :agent do
+        post 'chat',                  to: 'chat#create'
+        get  'context',               to: 'context#show'
+        get  'properties/summary',    to: 'properties#summary'
+        get  'leases/:id/irl',        to: 'leases#irl'
+        post 'receipts',              to: 'receipts#create'
+        get  'documents/:type',       to: 'documents#show'
+        post 'notifications/send',    to: 'notifications#dispatch_message'
+        resources :tickets, only: [:index, :create, :show]
+      end
     end
   end
 end
