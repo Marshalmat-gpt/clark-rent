@@ -28,6 +28,9 @@ gem 'sidekiq', '~> 7.2'
 # Email
 gem 'sendgrid-ruby', '~> 6.7'
 
+# SMS
+gem 'twilio-ruby', '~> 7.0'
+
 # CORS
 gem 'rack-cors', '~> 2.0'
 

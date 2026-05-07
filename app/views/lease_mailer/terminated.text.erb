@@ -1,0 +1,5 @@
+Bonjour <%= @tenant.first_name %>,
+
+Votre bail Clark Rent a pris fin le <%= I18n.l(@lease.end_date || Date.current, format: :long) %>.
+
+Pensez à vérifier l'état des lieux et la restitution du dépôt de garantie.

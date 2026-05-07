@@ -1,0 +1,4 @@
+<p>Bonjour <%= @tenant.first_name %>,</p>
+<p>Votre quittance de loyer pour <strong><%= I18n.l(@period, format: '%B %Y') %></strong> est jointe à cet email.</p>
+<p>Total perçu : <strong><%= number_to_currency(@lease.monthly_rent + @lease.monthly_charges, unit: '€') %></strong>.</p>
+<p>Merci de votre confiance.</p>
