@@ -1,7 +1,7 @@
 class Ticket < ApplicationRecord
   belongs_to :property
-  belongs_to :tenant,      class_name: 'User'
-  belongs_to :assigned_to, class_name: 'User', optional: true
+  belongs_to :tenant, class_name: 'User', inverse_of: :tenant_tickets
+  belongs_to :assigned_to, class_name: 'User', optional: true, inverse_of: :assigned_tickets
 
   CATEGORIES = %w[plomberie electricite chauffage serrurerie autre].freeze
   STATUSES   = %w[open assigned resolved closed].freeze
