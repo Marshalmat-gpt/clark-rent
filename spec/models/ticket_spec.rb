@@ -8,7 +8,7 @@ RSpec.describe Ticket, type: :model do
   end
 
   describe 'validations' do
-    subject { build(:ticket) }
+    subject { create(:ticket) }
 
     it { is_expected.to validate_presence_of(:description) }
     it { is_expected.to validate_inclusion_of(:category).in_array(Ticket::CATEGORIES) }
@@ -27,9 +27,9 @@ RSpec.describe Ticket, type: :model do
 
   describe '.open' do
     it 'includes open and assigned, excludes resolved/closed' do
-      open_t    = create(:ticket, status: 'open')
-      assigned  = create(:ticket, status: 'assigned')
-      resolved  = create(:ticket, status: 'resolved')
+      open_t   = create(:ticket, status: 'open')
+      assigned = create(:ticket, status: 'assigned')
+      resolved = create(:ticket, status: 'resolved')
 
       ids = Ticket.open.pluck(:id)
       expect(ids).to include(open_t.id, assigned.id)
