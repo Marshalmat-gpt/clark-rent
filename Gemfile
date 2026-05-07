@@ -12,9 +12,6 @@ gem 'puma', '~> 6.0'
 gem 'jwt', '~> 2.7'
 gem 'bcrypt', '~> 3.1'
 
-# Rate limiting
-gem 'rack-attack', '~> 6.7'
-
 # Storage
 gem 'aws-sdk-s3', '~> 1.140', require: false
 
