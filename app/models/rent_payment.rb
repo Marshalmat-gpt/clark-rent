@@ -2,7 +2,7 @@ class RentPayment < ApplicationRecord
   belongs_to :lease,  inverse_of: :rent_payments
   belongs_to :tenant, class_name: 'User'
 
-  has_one_attached :receipt # PDF quittance stocké sur S3
+  # PDF quittance: clé S3 stockée dans `data['receipt_key']` (ActiveStorage non chargé en API-only).
 
   STATUSES        = %w[pending paid late disputed].freeze
   PAYMENT_METHODS = %w[virement prelevement cheque especes].freeze
