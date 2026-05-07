@@ -18,10 +18,12 @@ module ClarkAgent
     private
 
     def landlord_context
-      properties = user.properties.includes(:leases)
+      properties = user.properties.includes(rooms: :leases)
       {
         properties_count: properties.size,
-        active_leases_count: properties.sum { |p| p.leases.count { |l| l.status == 'active' } },
+        active_leases_count: properties.sum { |p|
+          p.rooms.sum { |r| r.leases.count { |l| l.status == 'active' } }
+        },
         open_tickets_count: Ticket.for_owner(user).open.count
       }
     end
