@@ -61,27 +61,29 @@ RSpec.describe ClarkAgent::ToolRegistry do
   end
 
   describe 'create_ticket tool' do
+    before { create(:lease, room: room, tenant: tenant, status: 'active') }
+
     it 'creates a ticket and returns its id' do
       out = described_class.find('create_ticket').handler.call(
-        user: tenant, room_id: room.id, title: 'Fuite robinet'
+        user: tenant, category: 'plomberie', description: 'Fuite robinet'
       )
       expect(out[:id]).to be_a(Integer)
       expect(out[:status]).to eq('open')
-      expect(Ticket.find(out[:id]).title).to eq('Fuite robinet')
+      expect(Ticket.find(out[:id]).category).to eq('plomberie')
     end
 
-    it 'returns errors when title missing' do
+    it 'returns errors when description missing' do
       out = described_class.find('create_ticket').handler.call(
-        user: tenant, room_id: room.id, title: ''
+        user: tenant, category: 'plomberie', description: ''
       )
-      expect(out[:error]).to include("Title")
+      expect(out[:error]).to include('Description')
     end
   end
 
   describe 'list_tickets tool' do
     it 'filters by status when given' do
-      create(:ticket, reporter: tenant, room: room, status: 'open')
-      create(:ticket, reporter: tenant, room: room, status: 'closed')
+      create(:ticket, tenant: tenant, property: property, status: 'open')
+      create(:ticket, tenant: tenant, property: property, status: 'closed')
 
       out = described_class.find('list_tickets').handler.call(user: tenant, status: 'open')
       expect(out.size).to eq(1)
