@@ -1,3 +1,4 @@
+# rubocop:disable Metrics/MethodLength, Metrics/AbcSize, Metrics/BlockLength
 class RentReceiptGenerator
   def self.generate(lease:, month:)
     tenant   = lease.tenant
@@ -44,9 +45,9 @@ class RentReceiptGenerator
       ]
 
       pdf.table(rows, width: pdf.bounds.width, cell_style: { size: 11, padding: [6, 10] }) do
-        row(0).borders = [:top, :bottom]
+        row(0).borders = %i[top bottom]
         row(-1).font_style = :bold
-        row(-1).borders = [:top, :bottom]
+        row(-1).borders = %i[top bottom]
         column(1).align = :right
       end
 
@@ -64,10 +65,11 @@ class RentReceiptGenerator
       pdf.move_down 24
 
       # Signature
-      pdf.text "Fait le #{Date.today.strftime('%d/%m/%Y')}", size: 10
+      pdf.text "Fait le #{Time.zone.today.strftime('%d/%m/%Y')}", size: 10
       pdf.text owner.full_name, size: 10, style: :italic
       pdf.move_down 4
       pdf.text 'Document généré par Clark Rent', size: 8, color: '888888'
     end.render
   end
 end
+# rubocop:enable Metrics/MethodLength, Metrics/AbcSize, Metrics/BlockLength
