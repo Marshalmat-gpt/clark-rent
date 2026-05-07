@@ -7,11 +7,13 @@ RSpec.describe 'Api::V1::Agent::Tickets', type: :request do
   let(:room)     { create(:room, property: property) }
 
   describe 'POST /api/v1/agent/tickets' do
+    before { create(:lease, room: room, tenant: tenant, status: 'active') }
+
     it 'tenant opens a ticket' do
       ActiveJob::Base.queue_adapter = :test
       expect do
         post '/api/v1/agent/tickets',
-             params: { ticket: { room_id: room.id, title: 'Fuite', description: 'Robinet' } },
+             params: { ticket: { category: 'plomberie', description: 'Robinet qui fuit' } },
              headers: auth_headers(tenant)
       end.to have_enqueued_job(SendNotificationJob).with(
         hash_including(channel: 'email', recipient: landlord.email)
@@ -19,14 +21,14 @@ RSpec.describe 'Api::V1::Agent::Tickets', type: :request do
 
       expect(response).to have_http_status(:created)
       json = JSON.parse(response.body)
-      expect(json['title']).to eq('Fuite')
-      expect(json['reporter_id']).to eq(tenant.id)
+      expect(json['category']).to eq('plomberie')
+      expect(json['tenant_id']).to eq(tenant.id)
       expect(json['status']).to eq('open')
     end
 
-    it '422 when title missing' do
+    it '422 when description missing' do
       post '/api/v1/agent/tickets',
-           params: { ticket: { room_id: room.id } },
+           params: { ticket: { category: 'plomberie' } },
            headers: auth_headers(tenant)
       expect(response).to have_http_status(:unprocessable_entity)
     end
@@ -34,8 +36,8 @@ RSpec.describe 'Api::V1::Agent::Tickets', type: :request do
 
   describe 'GET /api/v1/agent/tickets' do
     it 'tenant sees only their own' do
-      mine  = create(:ticket, reporter: tenant, room: room)
-      other = create(:ticket, reporter: create(:user, :tenant), room: room)
+      mine  = create(:ticket, tenant: tenant, property: property)
+      other = create(:ticket, tenant: create(:user, :tenant), property: property)
 
       get '/api/v1/agent/tickets', headers: auth_headers(tenant)
       ids = JSON.parse(response.body).map { |t| t['id'] }
@@ -43,10 +45,10 @@ RSpec.describe 'Api::V1::Agent::Tickets', type: :request do
       expect(ids).not_to include(other.id)
     end
 
-    it 'landlord sees tickets on own rooms' do
-      mine  = create(:ticket, reporter: tenant, room: room)
-      other_room = create(:room, property: create(:property, user: create(:user, role: 'landlord')))
-      other = create(:ticket, reporter: tenant, room: other_room)
+    it 'landlord sees tickets on own properties' do
+      mine          = create(:ticket, tenant: tenant, property: property)
+      other_prop    = create(:property, user: create(:user, role: 'landlord'))
+      other         = create(:ticket, tenant: tenant, property: other_prop)
 
       get '/api/v1/agent/tickets', headers: auth_headers(landlord)
       ids = JSON.parse(response.body).map { |t| t['id'] }
