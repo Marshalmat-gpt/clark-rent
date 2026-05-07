@@ -1,0 +1,8 @@
+<p>Bonjour <%= @tenant.first_name %>,</p>
+<p>Votre candidature pour la chambre <strong><%= @application.room.name %></strong>
+   a été <strong><%= @decision == 'approved' ? 'acceptée' : 'refusée' %></strong>.</p>
+<% if @decision == 'approved' %>
+  <p>Le bailleur prendra contact avec vous pour finaliser le bail.</p>
+<% else %>
+  <p>N'hésitez pas à explorer les autres logements disponibles sur Clark Rent.</p>
+<% end %>

@@ -1,0 +1,8 @@
+Bonjour,
+
+<%= @application.tenant.first_name %> <%= @application.tenant.last_name %> a candidaté pour la chambre « <%= @application.room.name %> ».
+
+Message :
+<%= @application.message.presence || '(aucun message)' %>
+
+Connectez-vous à Clark Rent pour valider ou refuser la candidature.

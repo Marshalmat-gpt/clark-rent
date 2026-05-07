@@ -1,0 +1,5 @@
+<h2>Nouveau ticket</h2>
+<p><strong><%= @ticket.title %></strong> (priorité : <%= @ticket.priority %>)</p>
+<p>Logement : <%= @ticket.room.property.address %> — <%= @ticket.room.name %></p>
+<p>Déclarant : <%= @ticket.reporter.first_name %> <%= @ticket.reporter.last_name %></p>
+<blockquote><%= simple_format(@ticket.description.to_s) %></blockquote>

@@ -1,0 +1,7 @@
+<p>Bonjour <%= @tenant.first_name %>,</p>
+<p>Votre bail pour la chambre <strong><%= @room.name %></strong> au <%= @room.property.address %> a été signé.</p>
+<ul>
+  <li>Date de prise d'effet : <%= I18n.l(@lease.start_date, format: :long) %></li>
+  <li>Loyer mensuel : <%= number_to_currency(@lease.monthly_rent + @lease.monthly_charges, unit: '€') %></li>
+</ul>
+<p>Bienvenue chez Clark Rent.</p>
