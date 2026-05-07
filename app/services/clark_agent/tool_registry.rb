@@ -15,7 +15,7 @@ module ClarkAgent
       @tools ||= [
         Tool.new(
           name: 'get_user_context',
-          description: 'Renvoie le contexte courant de l\'utilisateur (rôle, propriétés, baux actifs, tickets ouverts).',
+          description: "Renvoie le contexte courant de l'utilisateur (rôle, propriétés, baux actifs, tickets ouverts).",
           input_schema: { type: 'object', properties: {}, required: [] },
           handler: ->(user:, **) { ContextBuilder.new(user: user).call }
         ),
@@ -39,7 +39,7 @@ module ClarkAgent
         ),
         Tool.new(
           name: 'calculate_irl_revision',
-          description: 'Calcule la révision annuelle d\'un loyer via la formule IRL.',
+          description: "Calcule la révision annuelle d'un loyer via la formule IRL.",
           input_schema: {
             type: 'object',
             properties: {
@@ -62,7 +62,7 @@ module ClarkAgent
         ),
         Tool.new(
           name: 'list_tickets',
-          description: 'Liste les tickets ouverts visibles par l\'utilisateur courant.',
+          description: "Liste les tickets ouverts visibles par l'utilisateur courant.",
           input_schema: {
             type: 'object',
             properties: {
@@ -74,33 +74,35 @@ module ClarkAgent
             scope = scoped_tickets(user)
             scope = scope.where(status: input[:status]) if input[:status].present?
             scope.order(created_at: :desc).limit(20).as_json(
-              only: %i[id title status priority room_id reporter_id created_at resolved_at]
+              only: %i[id category status priority property_id tenant_id created_at resolved_at]
             )
           end
         ),
         Tool.new(
           name: 'create_ticket',
-          description: 'Crée un nouveau ticket de maintenance pour une chambre donnée.',
+          description: 'Crée un nouveau ticket de maintenance pour la propriété du locataire.',
           input_schema: {
             type: 'object',
             properties: {
-              room_id: { type: 'integer' },
-              title: { type: 'string' },
+              category: { type: 'string', enum: Ticket::CATEGORIES },
               description: { type: 'string' },
               priority: { type: 'string', enum: Ticket::PRIORITIES }
             },
-            required: %w[room_id title]
+            required: %w[category description]
           },
           handler: lambda do |user:, **input|
+            property = user.leases.where(status: 'active').joins(:room).first&.room&.property
+            return { error: 'No active lease found' } unless property
+
             ticket = Ticket.new(
-              reporter: user,
-              room_id: input[:room_id],
-              title: input[:title],
+              property: property,
+              tenant: user,
+              category: input[:category],
               description: input[:description],
               priority: input[:priority] || 'normal'
             )
             if ticket.save
-              { id: ticket.id, status: ticket.status, priority: ticket.priority }
+              { id: ticket.id, status: ticket.status, priority: ticket.priority, category: ticket.category }
             else
               { error: ticket.errors.full_messages.join(', ') }
             end
@@ -127,9 +129,9 @@ module ClarkAgent
 
     def self.scoped_tickets(user)
       if user.role == 'landlord'
-        Ticket.joins(room: :property).where(properties: { user_id: user.id })
+        Ticket.for_owner(user)
       else
-        Ticket.where(reporter: user)
+        Ticket.where(tenant: user)
       end
     end
   end
