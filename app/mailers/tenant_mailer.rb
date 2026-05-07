@@ -9,7 +9,7 @@ class TenantMailer < ApplicationMailer
     @amount   = lease.amount + (lease.expense_amount || 0)
 
     mail(
-      to:      @tenant.email,
+      to: @tenant.email,
       subject: "Clark — Votre quittance de loyer #{month.strftime('%B %Y')}"
     )
   end
@@ -21,20 +21,20 @@ class TenantMailer < ApplicationMailer
     @property = lease.property
 
     mail(
-      to:      @tenant.email,
-      subject: "Clark — Bienvenue dans votre logement !"
+      to: @tenant.email,
+      subject: 'Clark — Bienvenue dans votre logement !'
     )
   end
 
   # Email de rappel de paiement (J-5 avant échéance)
   def payment_reminder(lease:)
-    @lease    = lease
-    @tenant   = lease.tenant
-    @amount   = lease.amount + (lease.expense_amount || 0)
+    @lease  = lease
+    @tenant = lease.tenant
+    @amount = lease.amount + (lease.expense_amount || 0)
 
     mail(
-      to:      @tenant.email,
-      subject: "Clark — Rappel : votre loyer est dû dans 5 jours"
+      to: @tenant.email,
+      subject: 'Clark — Rappel : votre loyer est dû dans 5 jours'
     )
   end
 end
