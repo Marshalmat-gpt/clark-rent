@@ -18,14 +18,11 @@ module ClarkAgent
     private
 
     def landlord_context
-      properties = user.properties.includes(rooms: :leases)
+      properties = user.properties.includes(:leases)
       {
         properties_count: properties.size,
-        rooms_count: properties.sum { |p| p.rooms.size },
-        active_leases_count: properties.sum { |p| p.rooms.sum { |r| r.leases.where(status: 'active').size } },
-        open_tickets_count: Ticket.joins(room: :property)
-                            .where(properties: { user_id: user.id })
-                                  .open_tickets.count
+        active_leases_count: properties.sum { |p| p.leases.count { |l| l.status == 'active' } },
+        open_tickets_count: Ticket.for_owner(user).open.count
       }
     end
 
@@ -33,7 +30,7 @@ module ClarkAgent
       {
         active_leases: user.leases.where(status: 'active').pluck(:id),
         applications_count: user.lease_applications.count,
-        open_tickets_count: Ticket.where(reporter: user).open_tickets.count
+        open_tickets_count: Ticket.where(tenant: user).open.count
       }
     end
   end
