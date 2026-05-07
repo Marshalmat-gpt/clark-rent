@@ -14,6 +14,11 @@ Rails.application.routes.draw do
       end
       resources :rooms, only: [:create, :update, :destroy, :index]
 
+      # Milestone 2.5 — Loyers et paiements
+      resources :rent_payments, only: [:create, :index, :show] do
+        member { patch :mark_paid }
+      end
+
       # Milestone 2 — Leases + Applications
       resources :leases, only: [:create, :update, :destroy, :index, :show] do
         member { patch :terminate }
