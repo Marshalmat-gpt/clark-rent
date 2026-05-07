@@ -27,8 +27,8 @@ class SendNotificationJob < ApplicationJob
     action       = fetch(payload, :action)
 
     if mailer_class.present? && action.present?
-      args = mailer_args(payload)
-      mailer_class.constantize.public_send(action, *args).deliver_now
+      args, kwargs = mailer_args(payload)
+      mailer_class.constantize.public_send(action, *args, **kwargs).deliver_now
     else
       deliver_raw_email(recipient, payload)
     end
@@ -36,7 +36,11 @@ class SendNotificationJob < ApplicationJob
 
   def mailer_args(payload)
     raw = fetch(payload, :args) || []
-    raw.is_a?(Hash) ? [raw.transform_keys(&:to_sym)] : Array(raw)
+    if raw.is_a?(Hash)
+      [[], raw.transform_keys(&:to_sym)]
+    else
+      [Array(raw), {}]
+    end
   end
 
   def deliver_raw_email(recipient, payload)

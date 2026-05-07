@@ -8,9 +8,14 @@ RSpec.describe 'Api::V1::Agent::Tickets', type: :request do
 
   describe 'POST /api/v1/agent/tickets' do
     it 'tenant opens a ticket' do
-      post '/api/v1/agent/tickets',
-           params: { ticket: { room_id: room.id, title: 'Fuite', description: 'Robinet' } },
-           headers: auth_headers(tenant)
+      ActiveJob::Base.queue_adapter = :test
+      expect do
+        post '/api/v1/agent/tickets',
+             params: { ticket: { room_id: room.id, title: 'Fuite', description: 'Robinet' } },
+             headers: auth_headers(tenant)
+      end.to have_enqueued_job(SendNotificationJob).with(
+        hash_including(channel: 'email', recipient: landlord.email)
+      )
 
       expect(response).to have_http_status(:created)
       json = JSON.parse(response.body)

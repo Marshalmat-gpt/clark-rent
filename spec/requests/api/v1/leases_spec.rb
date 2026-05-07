@@ -10,11 +10,16 @@ RSpec.describe 'Api::V1::Leases', type: :request do
 
   describe 'POST /api/v1/leases' do
     it 'landlord creates a lease on own room' do
-      post '/api/v1/leases',
-           params: { lease: { tenant_id: tenant.id, room_id: room.id,
-                              start_date: Date.current, monthly_rent: 900,
-                              monthly_charges: 30, deposit: 900 } },
-           headers: auth_headers(landlord)
+      ActiveJob::Base.queue_adapter = :test
+      expect do
+        post '/api/v1/leases',
+             params: { lease: { tenant_id: tenant.id, room_id: room.id,
+                                start_date: Date.current, monthly_rent: 900,
+                                monthly_charges: 30, deposit: 900 } },
+             headers: auth_headers(landlord)
+      end.to have_enqueued_job(SendNotificationJob).with(
+        hash_including(channel: 'email', recipient: tenant.email)
+      )
 
       expect(response).to have_http_status(:created)
       json = JSON.parse(response.body)
@@ -70,8 +75,13 @@ RSpec.describe 'Api::V1::Leases', type: :request do
 
   describe 'PATCH /api/v1/leases/:id/terminate' do
     it 'landlord terminates own lease' do
+      ActiveJob::Base.queue_adapter = :test
       lease = create(:lease, room: room, tenant: tenant)
-      patch "/api/v1/leases/#{lease.id}/terminate", headers: auth_headers(landlord)
+      expect do
+        patch "/api/v1/leases/#{lease.id}/terminate", headers: auth_headers(landlord)
+      end.to have_enqueued_job(SendNotificationJob).with(
+        hash_including(channel: 'email', recipient: tenant.email)
+      )
 
       expect(response).to have_http_status(:ok)
       expect(lease.reload.status).to eq('terminated')

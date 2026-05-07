@@ -14,6 +14,7 @@ module Api
         def create
           ticket = current_user_built_ticket
           if ticket.save
+            notify_landlord(ticket)
             render json: ticket, serializer: TicketSerializer, status: :created
           else
             render json: { errors: ticket.errors.full_messages }, status: :unprocessable_entity
@@ -32,6 +33,13 @@ module Api
           else
             Ticket.where(reporter: current_user)
           end
+        end
+
+        def notify_landlord(ticket)
+          SendNotificationJob.perform_later(
+            channel: 'email', recipient: ticket.room.property.user.email,
+            payload: { mailer: 'TicketMailer', action: 'created', args: [ticket.id] }
+          )
         end
 
         def ticket_params
