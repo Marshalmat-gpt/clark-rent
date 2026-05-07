@@ -10,9 +10,14 @@ RSpec.describe 'Api::V1::LeaseApplications', type: :request do
 
   describe 'POST /api/v1/lease_applications' do
     it 'tenant applies to a room' do
-      post '/api/v1/lease_applications',
-           params: { lease_application: { room_id: room.id, message: 'Bonjour' } },
-           headers: auth_headers(tenant)
+      ActiveJob::Base.queue_adapter = :test
+      expect do
+        post '/api/v1/lease_applications',
+             params: { lease_application: { room_id: room.id, message: 'Bonjour' } },
+             headers: auth_headers(tenant)
+      end.to have_enqueued_job(SendNotificationJob).with(
+        hash_including(channel: 'email', recipient: landlord.email)
+      )
 
       expect(response).to have_http_status(:created)
       json = JSON.parse(response.body)
@@ -51,9 +56,14 @@ RSpec.describe 'Api::V1::LeaseApplications', type: :request do
     let(:application) { create(:lease_application, tenant: tenant, room: room) }
 
     it 'landlord approves an application' do
-      patch "/api/v1/lease_applications/#{application.id}/validate",
-            params: { decision: 'approved' },
-            headers: auth_headers(landlord)
+      ActiveJob::Base.queue_adapter = :test
+      expect do
+        patch "/api/v1/lease_applications/#{application.id}/validate",
+              params: { decision: 'approved' },
+              headers: auth_headers(landlord)
+      end.to have_enqueued_job(SendNotificationJob).with(
+        hash_including(channel: 'email', recipient: tenant.email)
+      )
 
       expect(response).to have_http_status(:ok)
       expect(application.reload).to have_attributes(

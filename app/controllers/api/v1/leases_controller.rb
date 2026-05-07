@@ -16,6 +16,7 @@ module Api
 
         lease = Lease.new(lease_params.except(:room_id).merge(room: room))
         if lease.save
+          notify_lease_signed(lease)
           render json: lease, serializer: LeaseSerializer, status: :created
         else
           render json: { errors: lease.errors.full_messages }, status: :unprocessable_entity
@@ -43,6 +44,7 @@ module Api
         return forbidden unless owns_room?(@lease.room)
 
         if @lease.update(status: 'terminated', end_date: Date.current)
+          notify_lease_terminated(@lease)
           render json: @lease, serializer: LeaseSerializer
         else
           render json: { errors: @lease.errors.full_messages }, status: :unprocessable_entity
@@ -69,6 +71,20 @@ module Api
 
       def forbidden
         render json: { error: 'Forbidden' }, status: :forbidden
+      end
+
+      def notify_lease_signed(lease)
+        SendNotificationJob.perform_later(
+          channel: 'email', recipient: lease.tenant.email,
+          payload: { mailer: 'LeaseMailer', action: 'signed', args: [lease.id] }
+        )
+      end
+
+      def notify_lease_terminated(lease)
+        SendNotificationJob.perform_later(
+          channel: 'email', recipient: lease.tenant.email,
+          payload: { mailer: 'LeaseMailer', action: 'terminated', args: [lease.id] }
+        )
       end
 
       def lease_params

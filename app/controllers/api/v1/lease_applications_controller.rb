@@ -13,6 +13,7 @@ module Api
       def create
         application = current_user.lease_applications.build(create_params)
         if application.save
+          notify_landlord(application)
           render json: application, serializer: LeaseApplicationSerializer, status: :created
         else
           render json: { errors: application.errors.full_messages }, status: :unprocessable_entity
@@ -44,6 +45,7 @@ module Api
 
         method = params[:decision] == 'approved' ? :approve! : :reject!
         @application.public_send(method, by: current_user)
+        notify_tenant_decision(@application)
         render json: @application, serializer: LeaseApplicationSerializer
       end
 
@@ -75,6 +77,21 @@ module Api
 
       def forbidden
         render json: { error: 'Forbidden' }, status: :forbidden
+      end
+
+      def notify_landlord(application)
+        landlord_email = application.room.property.user.email
+        SendNotificationJob.perform_later(
+          channel: 'email', recipient: landlord_email,
+          payload: { mailer: 'LeaseApplicationMailer', action: 'submitted', args: [application.id] }
+        )
+      end
+
+      def notify_tenant_decision(application)
+        SendNotificationJob.perform_later(
+          channel: 'email', recipient: application.tenant.email,
+          payload: { mailer: 'LeaseApplicationMailer', action: 'validated', args: [application.id] }
+        )
       end
 
       def create_params
