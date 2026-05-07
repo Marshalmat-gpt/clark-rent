@@ -1,4 +1,4 @@
-# rubocop:disable Metrics/ClassLength, Metrics/MethodLength, Metrics/CyclomaticComplexity
+# rubocop:disable Metrics/ClassLength, Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/AbcSize, Metrics/PerceivedComplexity
 module ClarkAgent
   class ToolExecutor
     def self.execute(name:, input:, user:, _role:)
@@ -56,14 +56,14 @@ module ClarkAgent
 
       {
         content: {
-          payments: payments.map { |p|
+          payments: payments.map do |p|
             {
               month: p.paid_at&.strftime('%B %Y'),
               amount: p.amount,
               status: p.status,
               paid_at: p.paid_at&.strftime('%d/%m/%Y')
             }
-          },
+          end,
           total_paid: payments.sum(&:amount),
           on_time_count: payments.count { |p| p.status == 'paid' }
         }
@@ -104,11 +104,11 @@ module ClarkAgent
     def self.get_ticket_status(user, input)
       scope = Ticket.where(tenant: user).order(created_at: :desc)
       scope = scope.where(id: input['ticket_id']) if input['ticket_id'].present?
-      scope = scope.open unless input['ticket_id'].present?
+      scope = scope.open if input['ticket_id'].blank?
 
       {
         content: {
-          tickets: scope.map { |t|
+          tickets: scope.map do |t|
             {
               id: t.id,
               category: t.category,
@@ -119,7 +119,7 @@ module ClarkAgent
               assigned_to: t.assigned_to&.full_name,
               resolved_at: t.resolved_at&.strftime('%d/%m/%Y')
             }
-          }
+          end
         }
       }
     end
@@ -133,7 +133,11 @@ module ClarkAgent
               presigned_url(lease.document)
             when 'receipt'
               month   = Date.parse("#{input['month']}-01")
-              payment = lease.rent_payments.find_by('paid_at >= ? AND paid_at <= ?', month.beginning_of_month, month.end_of_month)
+              payment = lease.rent_payments.find_by(
+                'paid_at >= ? AND paid_at <= ?',
+                month.beginning_of_month,
+                month.end_of_month
+              )
               return { content: { error: "Quittance introuvable pour #{input['month']}." } } unless payment
 
               presigned_url(payment.receipt)
@@ -173,13 +177,15 @@ module ClarkAgent
       {
         content: {
           count: props.count,
-          properties: props.map { |p|
+          properties: props.map do |p|
             lease     = p.leases.order(created_at: :desc).first
             open_tkts = p.tickets.open.count
 
             alerts = []
-            alerts << "⚠️ Bail expire dans #{(lease.end_date - Time.zone.today).to_i}j" if lease&.end_date && (lease.end_date - Time.zone.today).to_i <= 60
-            alerts << "🚨 #{open_tkts} ticket(s) ouvert(s)" if open_tkts > 0
+            if lease&.end_date && (lease.end_date - Time.zone.today).to_i <= 60
+              alerts << "⚠️ Bail expire dans #{(lease.end_date - Time.zone.today).to_i}j"
+            end
+            alerts << "🚨 #{open_tkts} ticket(s) ouvert(s)" if open_tkts.positive?
 
             {
               id: p.id,
@@ -192,7 +198,7 @@ module ClarkAgent
               open_tickets: open_tkts,
               alerts: alerts
             }
-          }
+          end
         }
       }
     end
@@ -200,6 +206,20 @@ module ClarkAgent
     def self.get_property(user, input)
       property = user.properties.find(input['property_id'])
       lease    = property.leases.where(status: 'open').last
+
+      lease_data = if lease
+                     {
+                       id: lease.id,
+                       status: lease.status,
+                       amount: lease.amount,
+                       expense_amount: lease.expense_amount,
+                       tenant: lease.tenant&.full_name,
+                       tenant_phone: lease.tenant&.phone,
+                       start_date: lease.start_date&.strftime('%d/%m/%Y'),
+                       end_date: lease.end_date&.strftime('%d/%m/%Y'),
+                       days_to_expiry: lease.end_date ? (lease.end_date - Time.zone.today).to_i : nil
+                     }
+                   end
 
       {
         content: {
@@ -212,18 +232,8 @@ module ClarkAgent
             dpe_date: property.date_dpe&.strftime('%d/%m/%Y'),
             floors: property.floor
           },
-          lease: lease ? {
-            id: lease.id,
-            status: lease.status,
-            amount: lease.amount,
-            expense_amount: lease.expense_amount,
-            tenant: lease.tenant&.full_name,
-            tenant_phone: lease.tenant&.phone,
-            start_date: lease.start_date&.strftime('%d/%m/%Y'),
-            end_date: lease.end_date&.strftime('%d/%m/%Y'),
-            days_to_expiry: lease.end_date ? (lease.end_date - Time.zone.today).to_i : nil
-          } : nil,
-          recent_tickets: property.tickets.order(created_at: :desc).limit(5).map { |t|
+          lease: lease_data,
+          recent_tickets: property.tickets.order(created_at: :desc).limit(5).map do |t|
             {
               id: t.id,
               category: t.category,
@@ -231,7 +241,7 @@ module ClarkAgent
               priority: t.priority,
               date: t.created_at.strftime('%d/%m/%Y')
             }
-          }
+          end
         }
       }
     rescue ActiveRecord::RecordNotFound
@@ -251,7 +261,7 @@ module ClarkAgent
       {
         content: {
           lease_id: lease.id,
-          applications: apps.map { |a|
+          applications: apps.map do |a|
             {
               id: a.id,
               status: a.status,
@@ -260,7 +270,7 @@ module ClarkAgent
               description: a.description,
               submitted_at: a.created_at.strftime('%d/%m/%Y')
             }
-          }
+          end
         }
       }
     end
@@ -277,11 +287,11 @@ module ClarkAgent
       irl_reference = lease.irl_reference || 140.59
       new_rent      = (lease.amount * irl_current / irl_reference).round(2)
       delta         = (new_rent - lease.amount).round(2)
-      revision_date = lease.start_date&.then { |d|
+      revision_date = lease.start_date&.then do |d|
         # Prochaine date anniversaire du bail
         this_year = d.change(year: Time.zone.today.year)
         this_year < Time.zone.today ? this_year.next_year : this_year
-      }
+      end
 
       {
         content: {
@@ -359,4 +369,4 @@ module ClarkAgent
     end
   end
 end
-# rubocop:enable Metrics/ClassLength, Metrics/MethodLength, Metrics/CyclomaticComplexity
+# rubocop:enable Metrics/ClassLength, Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/AbcSize, Metrics/PerceivedComplexity
