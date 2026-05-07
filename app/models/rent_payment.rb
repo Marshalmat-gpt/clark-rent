@@ -1,5 +1,5 @@
 class RentPayment < ApplicationRecord
-  belongs_to :lease, class_name: 'PropertyLease', inverse_of: :rent_payments
+  belongs_to :lease,  inverse_of: :rent_payments
   belongs_to :tenant, class_name: 'User'
 
   has_one_attached :receipt # PDF quittance stocké sur S3
@@ -11,21 +11,14 @@ class RentPayment < ApplicationRecord
   validates :status,   inclusion: { in: STATUSES }
   validates :due_date, presence: true
 
-  # ── Scopes ────────────────────────────────────────────────────────────────
-
   scope :paid,      -> { where(status: 'paid') }
   scope :pending,   -> { where(status: 'pending') }
   scope :late,      -> { where(status: 'late') }
   scope :for_month, ->(date) { where(due_date: date.beginning_of_month..date.end_of_month) }
   scope :recent,    -> { order(due_date: :desc) }
 
-  # ── Callbacks ─────────────────────────────────────────────────────────────
-
   before_save :check_lateness
 
-  # ── Méthodes ──────────────────────────────────────────────────────────────
-
-  # Marque le paiement comme reçu
   def mark_as_paid!(method: nil)
     update!(
       status: 'paid',
@@ -34,12 +27,10 @@ class RentPayment < ApplicationRecord
     )
   end
 
-  # Total TTC (loyer + charges)
   def total
     amount + (expense_amount || 0)
   end
 
-  # Nombre de jours de retard
   def days_late
     return 0 unless late? && due_date
 
@@ -54,20 +45,18 @@ class RentPayment < ApplicationRecord
     status == 'paid'
   end
 
-  # ── Génération automatique des paiements mensuels ─────────────────────────
-
-  # Appelé lors de l'ouverture d'un bail pour pré-créer les échéances
+  # Pré-crée N échéances mensuelles pour un bail, alignées sur le 1er du mois.
   def self.generate_for_lease(lease:, months: 12)
     start_date = lease.start_date || Time.zone.today
 
     months.times.map do |i|
-      due = start_date >> i # >> = décale d'un mois
-      due = due.change(day: 1) # toujours le 1er du mois
+      due = start_date >> i
+      due = due.change(day: 1)
 
       find_or_create_by!(lease: lease, due_date: due) do |p|
         p.tenant         = lease.tenant
-        p.amount         = lease.amount
-        p.expense_amount = lease.expense_amount || 0
+        p.amount         = lease.monthly_rent
+        p.expense_amount = lease.monthly_charges || 0
         p.status         = 'pending'
       end
     end

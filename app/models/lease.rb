@@ -4,6 +4,8 @@ class Lease < ApplicationRecord
   belongs_to :tenant, class_name: 'User'
   belongs_to :room
 
+  has_many :rent_payments, dependent: :destroy, inverse_of: :lease
+
   validates :start_date, :monthly_rent, presence: true
   validates :status, inclusion: { in: STATUSES }
   validates :monthly_rent, numericality: { greater_than: 0 }
