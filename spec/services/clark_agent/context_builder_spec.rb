@@ -4,9 +4,10 @@ RSpec.describe ClarkAgent::ContextBuilder do
   let(:landlord) { create(:user, role: 'landlord') }
   let(:tenant)   { create(:user, :tenant) }
   let(:property) { create(:property, user: landlord) }
+  let(:room)     { create(:room, property: property) }
 
   it 'returns landlord-shaped context for landlords' do
-    create(:lease, property: property, tenant: tenant, status: 'active')
+    create(:lease, room: room, tenant: tenant, status: 'active')
     create(:ticket, property: property, tenant: tenant, status: 'open')
 
     ctx = described_class.new(user: landlord).call
@@ -16,7 +17,7 @@ RSpec.describe ClarkAgent::ContextBuilder do
   end
 
   it 'returns tenant-shaped context for tenants' do
-    lease = create(:lease, property: property, tenant: tenant, status: 'active')
+    lease = create(:lease, room: room, tenant: tenant, status: 'active')
 
     ctx = described_class.new(user: tenant).call
     expect(ctx).to include(role: 'tenant')
