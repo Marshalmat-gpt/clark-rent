@@ -1,3 +1,4 @@
+# rubocop:disable Metrics/ClassLength, Metrics/MethodLength
 module ClarkAgent
   class ToolDefinitions
     def self.all
@@ -24,9 +25,9 @@ module ClarkAgent
           input_schema: {
             type: 'object',
             properties: {
-              category:    { type: 'string', enum: %w[plomberie electricite chauffage serrurerie autre] },
+              category: { type: 'string', enum: %w[plomberie electricite chauffage serrurerie autre] },
               description: { type: 'string' },
-              priority:    { type: 'string', enum: %w[normal urgent], default: 'normal' }
+              priority: { type: 'string', enum: %w[normal urgent], default: 'normal' }
             },
             required: %w[category description]
           }
@@ -49,7 +50,7 @@ module ClarkAgent
             type: 'object',
             properties: {
               document_type: { type: 'string', enum: %w[lease receipt residence_certificate inventory] },
-              month:         { type: 'string', description: 'Format YYYY-MM pour les quittances' }
+              month: { type: 'string', description: 'Format YYYY-MM pour les quittances' }
             },
             required: %w[document_type]
           }
@@ -83,7 +84,7 @@ module ClarkAgent
             type: 'object',
             properties: {
               lease_id: { type: 'integer' },
-              status:   { type: 'string', enum: %w[new inprogress approved rejected_by_owner rejected_by_staff] }
+              status: { type: 'string', enum: %w[new inprogress approved rejected_by_owner rejected_by_staff] }
             },
             required: %w[lease_id]
           }
@@ -106,7 +107,7 @@ module ClarkAgent
             type: 'object',
             properties: {
               lease_id: { type: 'integer' },
-              month:    { type: 'string', description: 'Format YYYY-MM' }
+              month: { type: 'string', description: 'Format YYYY-MM' }
             },
             required: %w[lease_id month]
           }
@@ -115,3 +116,4 @@ module ClarkAgent
     end
   end
 end
+# rubocop:enable Metrics/ClassLength, Metrics/MethodLength
