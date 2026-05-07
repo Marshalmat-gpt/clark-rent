@@ -12,7 +12,7 @@ module Api
         end
 
         def create
-          ticket = current_user_built_ticket
+          ticket = build_ticket
           if ticket.save
             notify_landlord(ticket)
             render json: ticket, serializer: TicketSerializer, status: :created
@@ -23,27 +23,36 @@ module Api
 
         private
 
-        def current_user_built_ticket
-          Ticket.new(ticket_params.merge(reporter: current_user))
+        def build_ticket
+          property = resolve_property
+          Ticket.new(ticket_params.merge(tenant: current_user, property: property))
+        end
+
+        def resolve_property
+          if ticket_params[:property_id]
+            Property.find_by(id: ticket_params[:property_id])
+          else
+            current_user.leases.where(status: 'active').joins(:room).first&.room&.property
+          end
         end
 
         def scoped_tickets
           if current_user.role == 'landlord'
-            Ticket.joins(room: :property).where(properties: { user_id: current_user.id })
+            Ticket.for_owner(current_user)
           else
-            Ticket.where(reporter: current_user)
+            Ticket.where(tenant: current_user)
           end
         end
 
         def notify_landlord(ticket)
           SendNotificationJob.perform_later(
-            channel: 'email', recipient: ticket.room.property.user.email,
+            channel: 'email', recipient: ticket.property.user.email,
             payload: { mailer: 'TicketMailer', action: 'created', args: [ticket.id] }
           )
         end
 
         def ticket_params
-          params.require(:ticket).permit(:room_id, :title, :description, :priority)
+          params.require(:ticket).permit(:property_id, :category, :description, :priority)
         end
       end
     end
