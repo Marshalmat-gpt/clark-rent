@@ -59,7 +59,7 @@ RSpec.describe 'Api::V1::RentPayments', type: :request do
     end
 
     it 'filters by status when provided' do
-      paid = create(:rent_payment, lease: lease, tenant: tenant, status: 'paid', paid_at: Date.current)
+      paid = create(:rent_payment, lease: lease, tenant: tenant, status: 'paid', paid_at: Date.current, due_date: Date.current.next_month.next_month.beginning_of_month)
       get '/api/v1/rent_payments', params: { status: 'paid' }, headers: auth_headers(landlord)
       ids = JSON.parse(response.body).map { |p| p['id'] }
       expect(ids).to include(paid.id)
