@@ -1,3 +1,4 @@
+# rubocop:disable Metrics/MethodLength
 module ClarkAgent
   class SystemPrompt
     def self.build(user:, role:)
@@ -5,7 +6,7 @@ module ClarkAgent
     end
 
     def self.build_owner_prompt(user)
-      properties  = user.properties.includes(:leases)
+      properties = user.properties.includes(:leases)
       open_tickets = Ticket.for_owner(user).open.count
 
       <<~PROMPT
@@ -17,7 +18,7 @@ module ClarkAgent
         - Nombre de biens : #{properties.count}
         - Baux actifs : #{properties.flat_map(&:leases).count { |l| l.status == 'open' }}
         - Tickets ouverts : #{open_tickets}
-        - Date du jour : #{Date.today.strftime('%d/%m/%Y')}
+        - Date du jour : #{Time.zone.today.strftime('%d/%m/%Y')}
 
         Instructions :
         - Sois proactif : après chaque réponse, propose l'action suivante logique.
@@ -29,7 +30,7 @@ module ClarkAgent
 
     def self.build_tenant_prompt(user)
       lease = user.active_lease
-      return "Tu es Clark, assistant locatif Clark Rent. Aucun bail actif trouvé." unless lease
+      return 'Tu es Clark, assistant locatif Clark Rent. Aucun bail actif trouvé.' unless lease
 
       <<~PROMPT
         Tu es Clark, l'assistant de #{user.first_name} pour son logement.
@@ -40,7 +41,7 @@ module ClarkAgent
         - Loyer : #{lease.amount}€ + #{lease.expense_amount}€ de charges
         - Statut du bail : #{lease.status}
         - Bail depuis : #{lease.start_date&.strftime('%d/%m/%Y')}
-        - Date du jour : #{Date.today.strftime('%d/%m/%Y')}
+        - Date du jour : #{Time.zone.today.strftime('%d/%m/%Y')}
 
         Instructions :
         - Réponds toujours avec les données réelles de son bail via les outils.
@@ -51,3 +52,4 @@ module ClarkAgent
     end
   end
 end
+# rubocop:enable Metrics/MethodLength
