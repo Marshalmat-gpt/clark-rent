@@ -23,26 +23,31 @@ module Api
       private
 
       def check_login_rate_limit!
-        ip_key    = "rate_limit:login:ip:#{request.ip}"
-        email_val = params[:email]&.downcase&.gsub(/\s+/, '')
-        keys      = [ip_key]
-        keys << "rate_limit:login:email:#{email_val}" if email_val.present?
+        return unless login_rate_limit_exceeded?
 
-        keys.each do |key|
-          exceeded = Sidekiq.redis do |conn|
-            count = conn.call('INCR', key)
-            conn.call('EXPIRE', key, 60) if count == 1
-            count > 5
-          end
-
-          if exceeded
-            render json: { error: 'Too many requests. Please try again later.' },
-                   status: :too_many_requests
-            return
-          end
-        end
+        render json: { error: 'Too many requests. Please try again later.' },
+               status: :too_many_requests
       rescue StandardError => e
         Rails.logger.error("[rate_limit] #{e.class}: #{e.message}")
+      end
+
+      def login_rate_limit_exceeded?
+        rate_limit_keys.any? { |key| rate_limit_exceeded?(key) }
+      end
+
+      def rate_limit_exceeded?(key)
+        Sidekiq.redis do |conn|
+          count = conn.call('INCR', key)
+          conn.call('EXPIRE', key, 60) if count == 1
+          count > 5
+        end
+      end
+
+      def rate_limit_keys
+        keys = ["rate_limit:login:ip:#{request.ip}"]
+        email_val = params[:email]&.downcase&.gsub(/\s+/, '')
+        keys << "rate_limit:login:email:#{email_val}" if email_val.present?
+        keys
       end
     end
   end
