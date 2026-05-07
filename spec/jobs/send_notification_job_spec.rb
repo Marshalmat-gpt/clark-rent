@@ -21,14 +21,15 @@ RSpec.describe SendNotificationJob, type: :job do
       expect(ActionMailer::Base.deliveries.last.subject).to include('signé')
     end
 
-    it 'invokes the named mailer with kwargs hash' do
+    it 'invokes the named mailer with another positional arg' do
       described_class.new.perform(
         channel: 'email',
         recipient: 'tenant@example.com',
-        payload: { 'mailer' => 'LeaseMailer', 'action' => 'terminated', 'args' => { 'lease_id' => lease.id } }
+        payload: { 'mailer' => 'LeaseMailer', 'action' => 'terminated', 'args' => [lease.id] }
       )
 
       expect(ActionMailer::Base.deliveries.size).to eq(1)
+      expect(ActionMailer::Base.deliveries.last.subject).to include('Fin')
     end
   end
 
