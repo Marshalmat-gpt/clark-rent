@@ -363,7 +363,7 @@ module ClarkAgent
       when 'lease'                 then 'Télécharger le bail'
       when 'receipt'               then "Quittance #{month}"
       when 'residence_certificate' then 'Attestation de résidence'
-      when 'inventory'             then "État des lieux"
+      when 'inventory'             then 'État des lieux'
       else 'Télécharger le document'
       end
     end
