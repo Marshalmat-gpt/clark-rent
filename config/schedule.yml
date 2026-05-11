@@ -1,0 +1,16 @@
+# Sidekiq-cron schedule. Loaded by config/initializers/sidekiq.rb when
+# the process is a Sidekiq server (not in Rails console or RSpec).
+#
+# Cron syntax: minute hour day month weekday (UTC by default).
+
+generate_monthly_rent_payments:
+  cron: "0 4 1 * *"               # 04:00 UTC on the 1st of each month
+  class: GenerateMonthlyRentPaymentsJob
+  queue: default
+  description: "Pre-generate the next 3 months of pending rent payments for every active lease."
+
+ticket_sla_escalation:
+  cron: "0 */6 * * *"             # every 6 hours on the hour
+  class: TicketSlaEscalationJob
+  queue: default
+  description: "Notify landlords of urgent tickets open more than 48h."
