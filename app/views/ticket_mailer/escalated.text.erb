@@ -1,0 +1,10 @@
+Ticket urgent non traité depuis <%= ((Time.current - @ticket.created_at) / 1.hour).to_i %>h.
+
+Catégorie : <%= @ticket.category %>
+Logement : <%= @ticket.property.address %>
+Locataire : <%= @ticket.tenant.first_name %> <%= @ticket.tenant.last_name %>
+
+Description :
+<%= @ticket.description %>
+
+Merci de prendre contact rapidement avec le locataire.

@@ -10,6 +10,12 @@ class TicketMailer < ApplicationMailer
     mail(to: @ticket.tenant.email, subject: "Ticket résolu : #{ticket_subject}")
   end
 
+  def escalated(ticket_id)
+    @ticket  = Ticket.find(ticket_id)
+    landlord = @ticket.property.user
+    mail(to: landlord.email, subject: "[ESCALATION] #{ticket_subject}")
+  end
+
   private
 
   def ticket_subject
