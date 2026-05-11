@@ -7,7 +7,7 @@ module Api
         def dispatch_message
           channel   = params.require(:channel)
           recipient = params.require(:recipient)
-          payload   = params[:payload].is_a?(ActionController::Parameters) ? params[:payload].permit!.to_h : {}
+          payload   = params[:payload].is_a?(ActionController::Parameters) ? params[:payload].permit(:subject, :body, :template_id).to_h : {}
 
           unless ALLOWED_CHANNELS.include?(channel)
             return render json: { error: "channel must be one of #{ALLOWED_CHANNELS.join(', ')}" },
