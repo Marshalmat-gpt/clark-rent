@@ -1,20 +1,28 @@
 # rubocop:disable Metrics/MethodLength
 module ClarkAgent
   class SystemPrompt
+    # Strip everything except letters, spaces, hyphens and apostrophes to prevent
+    # prompt injection via crafted user names.
+    def self.sanitize_name(name)
+      name.to_s.gsub(/[^[:alpha:]\s\-']/, '').strip.first(64)
+    end
+
     def self.build(user:, role:)
       role == 'owner' ? build_owner_prompt(user) : build_tenant_prompt(user)
     end
 
     def self.build_owner_prompt(user)
-      properties = user.properties.includes(:leases)
+      properties   = user.properties.includes(:leases)
       open_tickets = Ticket.for_owner(user).open.count
+      first_name   = sanitize_name(user.first_name)
+      full_name    = sanitize_name(user.full_name)
 
       <<~PROMPT
-        Tu es Clark, l'assistant de gestion locative de #{user.first_name}.
+        Tu es Clark, l'assistant de gestion locative de #{first_name}.
         Tu as accès en temps réel aux données de son parc immobilier via des outils.
 
         Contexte :
-        - Propriétaire : #{user.full_name}
+        - Propriétaire : #{full_name}
         - Nombre de biens : #{properties.count}
         - Baux actifs : #{properties.flat_map(&:leases).count { |l| l.status == 'open' }}
         - Tickets ouverts : #{open_tickets}
@@ -29,14 +37,16 @@ module ClarkAgent
     end
 
     def self.build_tenant_prompt(user)
-      lease = user.active_lease
+      lease      = user.active_lease
+      first_name = sanitize_name(user.first_name)
+      full_name  = sanitize_name(user.full_name)
       return 'Tu es Clark, assistant locatif Clark Rent. Aucun bail actif trouvé.' unless lease
 
       <<~PROMPT
-        Tu es Clark, l'assistant de #{user.first_name} pour son logement.
+        Tu es Clark, l'assistant de #{first_name} pour son logement.
 
         Contexte :
-        - Locataire : #{user.full_name}
+        - Locataire : #{full_name}
         - Adresse : #{lease.property.formatted_address}
         - Loyer : #{lease.amount}€ + #{lease.expense_amount}€ de charges
         - Statut du bail : #{lease.status}
