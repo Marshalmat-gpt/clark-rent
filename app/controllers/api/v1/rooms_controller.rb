@@ -9,7 +9,7 @@ module Api
                 else
                   Room.joins(:property).where(properties: { user_id: current_user.id })
                 end
-        render json: rooms.order(:created_at), each_serializer: RoomSerializer
+        render json: paginate(rooms.order(:created_at)), each_serializer: RoomSerializer
       end
 
       def create

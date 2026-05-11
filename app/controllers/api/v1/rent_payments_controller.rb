@@ -4,7 +4,7 @@ module Api
       before_action :set_payment, only: %i[show mark_paid]
 
       def index
-        payments = scoped_payments.includes(:lease, :tenant).recent
+        payments = paginate(scoped_payments.includes(:lease, :tenant).recent)
         payments = payments.where(status: params[:status]) if params[:status].present?
         render json: payments, each_serializer: RentPaymentSerializer
       end
