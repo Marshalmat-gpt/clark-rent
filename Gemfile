@@ -24,6 +24,7 @@ gem 'prawn-table', '~> 0.2'
 
 # Jobs
 gem 'sidekiq', '~> 7.2'
+gem 'sidekiq-cron', '~> 2.0'
 
 # Email
 gem 'sendgrid-ruby', '~> 6.7'
