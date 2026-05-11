@@ -1,10 +1,12 @@
 # Rack::Attack — request throttling
 #
+# Requires the rack-attack gem. Add to Gemfile:
+#   gem 'rack-attack'
+#
 # Agent chat is throttled per authenticated token (20 req/min) and per IP (30 req/min)
 # to prevent Anthropic API cost exhaustion and brute-force abuse.
-#
-# Login brute-force protection (10 attempts / 5 min per IP) supplements the
-# Redis-backed check_login_rate_limit! in Api::V1::SessionsController.
+
+return unless defined?(Rack::Attack)
 
 Rack::Attack.throttle('agent/chat per token', limit: 20, period: 60) do |req|
   req.env['HTTP_AUTHORIZATION']&.split(' ')&.last if req.path == '/api/v1/agent/chat'
