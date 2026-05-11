@@ -1,4 +1,16 @@
 Rails.application.routes.draw do
+  # Sidekiq Web UI (admin-protected via HTTP basic auth)
+  require 'sidekiq/web'
+
+  if ENV['SIDEKIQ_WEB_USERNAME'].present? && ENV['SIDEKIQ_WEB_PASSWORD'].present?
+    Sidekiq::Web.use(Rack::Auth::Basic) do |username, password|
+      ActiveSupport::SecurityUtils.secure_compare(username, ENV.fetch('SIDEKIQ_WEB_USERNAME')) &
+        ActiveSupport::SecurityUtils.secure_compare(password, ENV.fetch('SIDEKIQ_WEB_PASSWORD'))
+    end
+  end
+
+  mount Sidekiq::Web => '/admin/sidekiq'
+
   # Health check — utilisé par Railway (railway.toml healthcheckPath)
   get '/health', to: 'health#show'
 
