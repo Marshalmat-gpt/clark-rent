@@ -1,4 +1,4 @@
-# rubocop:disable Metrics/CyclomaticComplexity, Metrics/MethodLength
+# rubocop:disable Metrics/CyclomaticComplexity
 module Api
   module V1
     module Agent
@@ -31,4 +31,4 @@ module Api
     end
   end
 end
-# rubocop:enable Metrics/CyclomaticComplexity, Metrics/MethodLength
+# rubocop:enable Metrics/CyclomaticComplexity
