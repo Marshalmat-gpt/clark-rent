@@ -15,6 +15,9 @@ module ClarkAgent
     MAX_TOKENS     = 1024
     MAX_ITERATIONS = 5
 
+    # Keys that must never be overridden by LLM-controlled tool input
+    PROTECTED_TOOL_KEYS = %i[user role _role current_user].freeze
+
     attr_reader :user, :model
 
     def initialize(user:, model: DEFAULT_MODEL)
@@ -37,17 +40,18 @@ module ClarkAgent
       'Je n\'ai pas pu finaliser la requête (limite d\'itérations atteinte).'
     end
 
+    private
+
     def system_prompt
+      name = user.first_name.to_s.gsub(/[^[:alpha:]\s\-']/, '').strip.first(64)
       <<~PROMPT
         Tu es Clark, l'agent virtuel de la plateforme de gestion locative Clark Rent.
-        L'utilisateur courant est #{user.first_name} (#{user.role}).
+        L'utilisateur courant est #{name} (#{user.role}).
         Réponds en français, de façon concise et factuelle. Utilise les
         outils disponibles pour lire ou modifier les données, plutôt que
         d'inventer une réponse.
       PROMPT
     end
-
-    private
 
     def call_api(messages)
       client.messages(
@@ -89,13 +93,15 @@ module ClarkAgent
     end
 
     def safe_call(tool, input)
-      tool.handler.call(user: user, **input.transform_keys(&:to_sym))
+      # Strip keys that could override the authenticated user or bypass authorization
+      safe_input = input.transform_keys(&:to_sym).except(*PROTECTED_TOOL_KEYS)
+      tool.handler.call(user: user, **safe_input)
     rescue StandardError => e
       { error: "#{e.class}: #{e.message}" }
     end
 
     def client
-      @client ||= Anthropic::Client.new(access_token: ENV.fetch('ANTHROPIC_API_KEY', ''))
+      @client ||= Anthropic::Client.new(access_token: ENV.fetch('ANTHROPIC_API_KEY'))
     end
 
     def extract_text(response)
