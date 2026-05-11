@@ -1,6 +1,8 @@
 # rubocop:disable Metrics/ClassLength, Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/AbcSize, Metrics/PerceivedComplexity
 module ClarkAgent
   class ToolExecutor
+    ALLOWED_PRIORITIES = %w[normal urgent].freeze
+
     def self.execute(name:, input:, user:, _role:)
       case name
       when 'get_my_lease'           then get_my_lease(user)
@@ -51,7 +53,8 @@ module ClarkAgent
       lease = user.active_lease
       return { content: { error: 'Aucun bail actif.' } } unless lease
 
-      limit    = (input['limit'] || 12).to_i
+      # Cap limit to prevent unbounded query from LLM-controlled input
+      limit    = [[input['limit'].to_i, 1].max, 100].min
       payments = lease.rent_payments.order(paid_at: :desc).limit(limit)
 
       {
@@ -74,12 +77,15 @@ module ClarkAgent
       lease = user.active_lease
       return { content: { error: 'Aucun bail actif.' } } unless lease
 
+      # Whitelist and sanitize LLM-controlled input before persisting
+      priority = ALLOWED_PRIORITIES.include?(input['priority'].to_s) ? input['priority'] : 'normal'
+
       ticket = Ticket.create!(
         property: lease.property,
         tenant: user,
-        category: input['category'],
-        description: input['description'],
-        priority: input['priority'] || 'normal',
+        category: input['category'].to_s.strip.first(50),
+        description: input['description'].to_s.strip.first(2000),
+        priority: priority,
         status: 'open'
       )
 
@@ -132,7 +138,11 @@ module ClarkAgent
             when 'lease'
               presigned_url(lease.document)
             when 'receipt'
-              month   = Date.parse("#{input['month']}-01")
+              month = begin
+                        Date.parse("#{input['month']}-01")
+                      rescue Date::Error, TypeError
+                        return { content: { error: 'Format de mois invalide. Utilisez YYYY-MM.' } }
+                      end
               payment = lease.rent_payments.find_by(
                 'paid_at >= ? AND paid_at <= ?',
                 month.beginning_of_month,
@@ -249,10 +259,8 @@ module ClarkAgent
     end
 
     def self.list_applications(user, input)
-      lease = user.properties
-                  .flat_map(&:leases)
-                  .find { |l| l.id == input['lease_id'].to_i }
-
+      # Scoped DB query — prevents IDOR via Ruby-land lease lookup
+      lease = Lease.joins(:property).where(properties: { user_id: user.id }).find_by(id: input['lease_id'].to_i)
       return { content: { error: 'Bail introuvable ou non autorisé.' } } unless lease
 
       apps = lease.lease_applications.includes(:applicant)
@@ -276,10 +284,8 @@ module ClarkAgent
     end
 
     def self.calculate_irl_revision(user, input)
-      lease = user.properties
-                  .flat_map(&:leases)
-                  .find { |l| l.id == input['lease_id'].to_i }
-
+      # Scoped DB query — prevents IDOR via Ruby-land lease lookup
+      lease = Lease.joins(:property).where(properties: { user_id: user.id }).find_by(id: input['lease_id'].to_i)
       return { content: { error: 'Bail introuvable.' } } unless lease
 
       # IRL Q1 2025 (source INSEE) — à mettre à jour trimestriellement
@@ -309,13 +315,15 @@ module ClarkAgent
     end
 
     def self.generate_rent_receipt(user, input)
-      lease = user.properties
-                  .flat_map(&:leases)
-                  .find { |l| l.id == input['lease_id'].to_i }
-
+      # Scoped DB query — prevents IDOR via Ruby-land lease lookup
+      lease = Lease.joins(:property).where(properties: { user_id: user.id }).find_by(id: input['lease_id'].to_i)
       return { content: { error: 'Bail introuvable.' } } unless lease
 
-      month = Date.parse("#{input['month']}-01")
+      month = begin
+                Date.parse("#{input['month']}-01")
+              rescue Date::Error, TypeError
+                return { content: { error: 'Format de mois invalide. Utilisez YYYY-MM.' } }
+              end
       pdf   = RentReceiptGenerator.generate(lease: lease, month: month)
       key   = "receipts/#{lease.id}/#{input['month']}.pdf"
       url   = upload_to_s3(pdf, key)
