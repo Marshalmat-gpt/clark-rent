@@ -1,3 +1,4 @@
+# rubocop:disable Metrics/CyclomaticComplexity, Metrics/MethodLength
 module Api
   module V1
     module Agent
@@ -18,7 +19,9 @@ module Api
                        when 'application' then nil
                        end
 
-          return render json: { error: 'Document not found or not yet generated' }, status: :not_found unless attachment&.attached?
+          unless attachment&.attached?
+            return render json: { error: 'Document not found or not yet generated' }, status: :not_found
+          end
 
           render json: { url: attachment.blob.service_url(expires_in: 1.hour) }
         rescue ActionController::ParameterMissing => e
@@ -28,3 +31,4 @@ module Api
     end
   end
 end
+# rubocop:enable Metrics/CyclomaticComplexity, Metrics/MethodLength
