@@ -3,7 +3,7 @@ module Api
     module Agent
       class TicketsController < BaseController
         def index
-          render json: scoped_tickets.order(created_at: :desc), each_serializer: TicketSerializer
+          render json: paginate(scoped_tickets.order(created_at: :desc)), each_serializer: TicketSerializer
         end
 
         def show

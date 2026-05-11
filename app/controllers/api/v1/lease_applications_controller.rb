@@ -4,7 +4,7 @@ module Api
       before_action :set_application, only: %i[show update destroy validate]
 
       def index
-        apps = scoped_applications.includes(:room, :tenant).order(created_at: :desc)
+        apps = paginate(scoped_applications.includes(:room, :tenant).order(created_at: :desc))
         render json: apps, each_serializer: LeaseApplicationSerializer
       end
 

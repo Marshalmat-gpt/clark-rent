@@ -4,7 +4,7 @@ module Api
       before_action :set_lease, only: %i[show update destroy terminate]
 
       def index
-        leases = current_user_leases.includes(:room, :tenant).order(created_at: :desc)
+        leases = paginate(current_user_leases.includes(:room, :tenant).order(created_at: :desc))
         render json: leases, each_serializer: LeaseSerializer
       end
 

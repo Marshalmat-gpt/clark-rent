@@ -7,7 +7,7 @@ module Api
       def index
         return render json: { error: 'Forbidden' }, status: :forbidden unless current_user.role == 'landlord'
 
-        render json: User.order(:created_at), each_serializer: UserSerializer
+        render json: paginate(User.order(:created_at)), each_serializer: UserSerializer
       end
 
       def show = render json: @user, serializer: UserSerializer
