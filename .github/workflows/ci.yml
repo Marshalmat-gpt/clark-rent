@@ -65,3 +65,27 @@ jobs:
         run: bundle exec rails db:create db:migrate
       - name: Run RSpec
         run: bundle exec rspec
+
+  brakeman:
+    name: Brakeman
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2.2'
+          bundler-cache: true
+      - name: Run Brakeman
+        run: bundle exec brakeman --no-exit-on-warn -q
+
+  bundler_audit:
+    name: Bundler-audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2.2'
+          bundler-cache: true
+      - name: Run bundler-audit
+        run: bundle exec bundler-audit check --update
