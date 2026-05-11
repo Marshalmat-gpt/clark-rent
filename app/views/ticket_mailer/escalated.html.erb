@@ -1,0 +1,7 @@
+<h2>[Escalation] Ticket urgent non traité</h2>
+<p>Ouvert depuis <strong><%= ((Time.current - @ticket.created_at) / 1.hour).to_i %>h</strong> sans réponse.</p>
+<p>Catégorie : <strong><%= @ticket.category.humanize %></strong></p>
+<p>Logement : <%= @ticket.property.address %></p>
+<p>Locataire : <%= @ticket.tenant.first_name %> <%= @ticket.tenant.last_name %></p>
+<blockquote><%= simple_format(@ticket.description.to_s) %></blockquote>
+<p><em>Merci de prendre contact rapidement avec le locataire.</em></p>

@@ -26,4 +26,13 @@ RSpec.describe TicketMailer, type: :mailer do
       expect(mail.subject).to include('Fuite robinet')
     end
   end
+
+  describe '#escalated' do
+    it 'notifies the landlord with ESCALATION subject' do
+      mail = described_class.escalated(ticket.id)
+      expect(mail.to).to eq(['landlord@example.com'])
+      expect(mail.subject).to include('ESCALATION')
+      expect(mail.subject).to include('Fuite robinet')
+    end
+  end
 end
