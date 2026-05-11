@@ -1,7 +1,4 @@
 # Sidekiq::Web is mounted at /admin/sidekiq in config/routes.rb.
-#
-# Rails runs in API mode (no cookie/session middleware). Disable the
-# default session here so the dashboard works behind Rack::Auth::Basic
-# without forcing a session store.
+# Sidekiq 7 manages session/CSRF internally; this file is kept as
+# a placeholder for future overrides.
 require 'sidekiq/web'
-Sidekiq::Web.set :sessions, false
