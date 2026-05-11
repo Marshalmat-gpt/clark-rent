@@ -139,10 +139,10 @@ module ClarkAgent
               presigned_url(lease.document)
             when 'receipt'
               month = begin
-                        Date.parse("#{input['month']}-01")
-                      rescue Date::Error, TypeError
-                        return { content: { error: 'Format de mois invalide. Utilisez YYYY-MM.' } }
-                      end
+                Date.parse("#{input['month']}-01")
+              rescue Date::Error, TypeError
+                return { content: { error: 'Format de mois invalide. Utilisez YYYY-MM.' } }
+              end
               payment = lease.rent_payments.find_by(
                 'paid_at >= ? AND paid_at <= ?',
                 month.beginning_of_month,
@@ -320,10 +320,10 @@ module ClarkAgent
       return { content: { error: 'Bail introuvable.' } } unless lease
 
       month = begin
-                Date.parse("#{input['month']}-01")
-              rescue Date::Error, TypeError
-                return { content: { error: 'Format de mois invalide. Utilisez YYYY-MM.' } }
-              end
+        Date.parse("#{input['month']}-01")
+      rescue Date::Error, TypeError
+        return { content: { error: 'Format de mois invalide. Utilisez YYYY-MM.' } }
+      end
       pdf   = RentReceiptGenerator.generate(lease: lease, month: month)
       key   = "receipts/#{lease.id}/#{input['month']}.pdf"
       url   = upload_to_s3(pdf, key)
