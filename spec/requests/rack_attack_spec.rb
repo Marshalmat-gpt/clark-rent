@@ -2,14 +2,17 @@ require 'rails_helper'
 
 # Verifies rack-attack throttles are loaded and configured. The test env
 # disables Rack::Attack globally (see config/environments/test.rb) so we
-# re-enable for these specs and re-disable in an after block.
+# re-enable for these specs and always restore — even on failure — via
+# an around block to keep adjacent specs (e.g. sessions_spec) unaffected.
 RSpec.describe 'Rack::Attack throttles', type: :request do
-  before do
+  around do |example|
     Rack::Attack.enabled = true
     Rack::Attack.reset!
+    example.run
+  ensure
+    Rack::Attack.reset!
+    Rack::Attack.enabled = false
   end
-
-  after { Rack::Attack.enabled = false }
 
   it 'registers all three throttle rules' do
     names = Rack::Attack.throttles.keys
@@ -17,15 +20,13 @@ RSpec.describe 'Rack::Attack throttles', type: :request do
   end
 
   it 'throttles repeated POST /api/v1/sessions from the same IP' do
-    # logins per ip = 10 per 5 minutes — fire 11 requests
     payload = { email: 'nope@example.com', password: 'bad' }
 
-    11.times.map do
+    statuses = 11.times.map do
       post '/api/v1/sessions', params: payload
       response.status
-    end => statuses
+    end
 
-    # At least one request must have been rejected with 429.
     expect(statuses).to include(429)
   end
 end
