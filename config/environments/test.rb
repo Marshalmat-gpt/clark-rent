@@ -14,4 +14,8 @@ Rails.application.configure do
   config.action_mailer.perform_deliveries = true
   config.action_mailer.raise_delivery_errors = true
   config.action_mailer.default_url_options = { host: 'test.clarkrent.com' }
+
+  # Disable Rack::Attack throttles in tests so rapid spec requests
+  # do not trip the global limits configured in initializers.
+  Rack::Attack.enabled = false if defined?(Rack::Attack)
 end
