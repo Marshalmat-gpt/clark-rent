@@ -14,3 +14,9 @@ ticket_sla_escalation:
   class: TicketSlaEscalationJob
   queue: default
   description: "Notify landlords of urgent tickets open more than 48h."
+
+lease_irl_anniversary:
+  cron: "0 7 * * *"             # 07:00 UTC daily (~ 08:00 Paris winter)
+  class: LeaseIrlAnniversaryReminderJob
+  queue: default
+  description: "Email landlords on a lease anniversary to prompt an IRL revision."

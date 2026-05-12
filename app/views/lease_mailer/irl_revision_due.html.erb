@@ -1,0 +1,9 @@
+<p>Bonjour <%= @landlord.first_name %>,</p>
+<p>Le bail de <strong><%= @tenant.first_name %> <%= @tenant.last_name %></strong>
+   pour la chambre <strong><%= @lease.room.name %></strong>
+   atteint un anniversaire annuel aujourd'hui
+   (<%= I18n.l(@lease.start_date, format: :long) %>).</p>
+<p>Vous pouvez procéder à la révision IRL du loyer en consultant le dernier
+   indice INSEE et en utilisant l'outil <code>calculate_irl_revision</code>
+   depuis Clark.</p>
+<p>Loyer actuel : <strong><%= number_to_currency(@lease.monthly_rent, unit: '€') %></strong></p>
