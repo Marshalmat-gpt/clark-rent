@@ -33,4 +33,11 @@ RSpec.describe LeaseMailer, type: :mailer do
       expect(mail.subject).to eq('Fin de votre bail Clark Rent')
     end
   end
+  describe '#irl_revision_due' do
+    it 'notifies the landlord with anniversary subject' do
+      mail = described_class.irl_revision_due(lease.id)
+      expect(mail.to).to eq([landlord.email])
+      expect(mail.subject).to include('Révision annuelle IRL')
+    end
+  end
 end

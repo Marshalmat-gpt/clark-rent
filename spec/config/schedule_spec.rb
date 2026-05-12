@@ -10,7 +10,7 @@ RSpec.describe 'config/schedule.yml' do
   end
 
   it 'declares the two cron entries with valid classes and cron strings' do
-    expect(schedule.keys).to contain_exactly('generate_monthly_rent_payments', 'ticket_sla_escalation')
+    expect(schedule.keys).to contain_exactly('generate_monthly_rent_payments', 'ticket_sla_escalation', 'lease_irl_anniversary')
 
     schedule.each_value do |entry|
       expect(entry['cron']).to match(%r{\A[\d \*/,-]+\z})
