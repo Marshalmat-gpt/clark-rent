@@ -41,4 +41,16 @@ RSpec.configure do |config|
     msg   = example.exception.message.to_s.split(%r{\n}).first(3).join(' | ')
     $stderr.puts "::error file=#{file},line=#{line}::FAIL: #{desc} -- #{msg}"
   end
+
+  config.before(:each, type: :request) do
+    Bullet.start_request if defined?(Bullet) && Bullet.enable?
+  end
+
+  config.after(:each, type: :request) do
+    if defined?(Bullet) && Bullet.enable?
+      Bullet.perform_out_of_channel_notifications if Bullet.notification?
+      Bullet.end_request
+    end
+  end
+
 end

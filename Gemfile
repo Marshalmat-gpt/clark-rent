@@ -52,6 +52,7 @@ group :development, :test do
   gem 'dotenv-rails'
   gem 'database_cleaner-active_record', '~> 2.1'
   gem 'shoulda-matchers', '~> 5.3'
+  gem 'bullet',           '~> 7.2'
 end
 
 group :development do
