@@ -61,6 +61,9 @@ module ClarkRent
     config.time_zone = 'Paris'
     config.i18n.default_locale = :fr
 
+    # Rack::Attack throttles defined in config/initializers/rack_attack.rb
+    config.middleware.use Rack::Attack
+
     # Fix FrozenError at railties/engine.rb:
     # Rails 7.2 freezes routes_reloader.paths before AMS 0.10.16's inherited
     # Engine add_routing_paths initializer calls unshift() on it.

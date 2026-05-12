@@ -34,6 +34,7 @@ gem 'twilio-ruby', '~> 7.0'
 
 # CORS
 gem 'rack-cors', '~> 2.0'
+gem 'rack-attack', '~> 6.7'
 
 # Observability
 gem 'lograge', '~> 0.14'
