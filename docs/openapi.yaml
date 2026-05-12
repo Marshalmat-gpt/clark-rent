@@ -1,0 +1,497 @@
+openapi: 3.1.0
+info:
+  title: Clark Rent API
+  version: '1.0.0'
+  description: |
+    REST + JSON API powering the Clark Rent rental management platform.
+    Companion to docs/API.md.
+servers:
+  - url: https://api.clarkrent.com/api/v1
+    description: Production
+  - url: http://localhost:3000/api/v1
+    description: Development
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, default: 1, minimum: 1 }
+    PerPage:
+      name: per_page
+      in: query
+      schema: { type: integer, default: 25, minimum: 1, maximum: 100 }
+
+  headers:
+    X-Total-Count: { schema: { type: integer } }
+    X-Page:        { schema: { type: integer } }
+    X-Per-Page:    { schema: { type: integer } }
+    X-Total-Pages: { schema: { type: integer } }
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+    Errors:
+      type: object
+      properties:
+        errors: { type: array, items: { type: string } }
+
+    User:
+      type: object
+      properties:
+        id:         { type: integer }
+        email:      { type: string,  format: email }
+        first_name: { type: string }
+        last_name:  { type: string }
+        role:       { type: string, enum: [landlord, tenant] }
+        created_at: { type: string, format: date-time }
+
+    Property:
+      type: object
+      properties:
+        id:         { type: integer }
+        name:       { type: string }
+        address:    { type: string }
+        user_id:    { type: integer }
+        created_at: { type: string, format: date-time }
+
+    Room:
+      type: object
+      properties:
+        id:           { type: integer }
+        name:         { type: string }
+        surface_area: { type: number, nullable: true }
+        rent:         { type: number }
+        charges:      { type: number }
+        property_id:  { type: integer }
+
+    Lease:
+      type: object
+      properties:
+        id:              { type: integer }
+        tenant_id:       { type: integer }
+        room_id:         { type: integer }
+        start_date:      { type: string, format: date }
+        end_date:        { type: string, format: date, nullable: true }
+        monthly_rent:    { type: number }
+        monthly_charges: { type: number }
+        deposit:         { type: number }
+        status:          { type: string, enum: [active, ended, terminated] }
+        signed_at:       { type: string, format: date-time, nullable: true }
+        created_at:      { type: string, format: date-time }
+
+    LeaseApplication:
+      type: object
+      properties:
+        id:               { type: integer }
+        tenant_id:        { type: integer }
+        room_id:          { type: integer }
+        status:           { type: string, enum: [pending, approved, rejected] }
+        message:          { type: string, nullable: true }
+        validated_at:     { type: string, format: date-time, nullable: true }
+        validated_by_id:  { type: integer, nullable: true }
+        created_at:       { type: string, format: date-time }
+
+    RentPayment:
+      type: object
+      properties:
+        id:             { type: integer }
+        lease_id:       { type: integer }
+        tenant_id:      { type: integer }
+        amount:         { type: number }
+        expense_amount: { type: number }
+        status:         { type: string, enum: [pending, paid, late, disputed] }
+        due_date:       { type: string, format: date }
+        paid_at:        { type: string, format: date, nullable: true }
+        payment_method: { type: string, enum: [virement, prelevement, cheque, especes], nullable: true }
+        created_at:     { type: string, format: date-time }
+
+    Ticket:
+      type: object
+      properties:
+        id:           { type: integer }
+        property_id:  { type: integer }
+        tenant_id:    { type: integer }
+        category:     { type: string, enum: [plomberie, electricite, chauffage, serrurerie, autre] }
+        description:  { type: string }
+        status:       { type: string, enum: [open, assigned, resolved, closed] }
+        priority:     { type: string, enum: [normal, urgent] }
+        resolved_at:  { type: string, format: date-time, nullable: true }
+        created_at:   { type: string, format: date-time }
+
+    AgentChatRequest:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              role:    { type: string, enum: [user, assistant] }
+              content: { oneOf: [{ type: string }, { type: array }] }
+
+    AgentChatResponse:
+      type: object
+      properties:
+        reply: { type: string }
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid JWT
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Authenticated but not authorised
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Record not found or out of scope
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unprocessable:
+      description: Validation failed
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Errors' }
+    TooManyRequests:
+      description: Rate limit exceeded (rack-attack)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+paths:
+  /health:
+    get:
+      security: []
+      summary: Liveness + dependency check
+      responses:
+        '200':
+          description: ok
+        '503':
+          description: database unreachable
+
+  /sessions:
+    post:
+      security: []
+      summary: Issue JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:    { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200':
+          description: token issued
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    delete:
+      summary: Client-side logout (stateless)
+      responses:
+        '204': { description: no content }
+
+  /users:
+    get:
+      summary: List users
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: ok
+          headers:
+            X-Total-Count: { $ref: '#/components/headers/X-Total-Count' }
+            X-Page:        { $ref: '#/components/headers/X-Page' }
+            X-Per-Page:    { $ref: '#/components/headers/X-Per-Page' }
+            X-Total-Pages: { $ref: '#/components/headers/X-Total-Pages' }
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/User' } }
+    post:
+      security: []
+      summary: Sign up
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  required: [email, password, first_name, last_name, role]
+                  properties:
+                    email:      { type: string }
+                    password:   { type: string }
+                    first_name: { type: string }
+                    last_name:  { type: string }
+                    role:       { type: string, enum: [landlord, tenant] }
+      responses:
+        '201': { description: created }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /properties:
+    get:
+      summary: List properties (current user)
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Property' } }
+    post:
+      summary: Create property
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                property:
+                  type: object
+                  required: [name, address]
+                  properties:
+                    name:    { type: string }
+                    address: { type: string }
+      responses:
+        '201': { description: created }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /rooms:
+    get:
+      summary: List rooms
+      parameters:
+        - { name: property_id, in: query, schema: { type: integer } }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Room' } }
+    post:
+      summary: Create room
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                room:
+                  type: object
+                  required: [name, rent, property_id]
+                  properties:
+                    name:         { type: string }
+                    surface_area: { type: number }
+                    rent:         { type: number }
+                    charges:      { type: number }
+                    property_id:  { type: integer }
+      responses:
+        '201': { description: created }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /leases:
+    get:
+      summary: List leases (scoped by role)
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Lease' } }
+    post:
+      summary: Create lease (landlord only)
+      responses:
+        '201': { description: created }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /leases/{id}/terminate:
+    patch:
+      summary: Terminate a lease (landlord only)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: ok }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /lease_applications:
+    get:
+      summary: List applications (scoped by role)
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/LeaseApplication' } }
+    post:
+      summary: Apply to a room (tenant only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                lease_application:
+                  type: object
+                  required: [room_id]
+                  properties:
+                    room_id: { type: integer }
+                    message: { type: string }
+      responses:
+        '201': { description: created }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /lease_applications/{id}/validate:
+    patch:
+      summary: Approve or reject an application (landlord only)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision: { type: string, enum: [approved, rejected] }
+      responses:
+        '200': { description: ok }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /rent_payments:
+    get:
+      summary: List rent payments
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [pending, paid, late, disputed] } }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/RentPayment' } }
+    post:
+      summary: Pre-generate monthly payments for a lease (landlord only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lease_id]
+              properties:
+                lease_id: { type: integer }
+                months:   { type: integer, default: 12 }
+      responses:
+        '201': { description: created }
+        '400': { description: bad request }
+
+  /rent_payments/{id}/mark_paid:
+    patch:
+      summary: Mark a payment as paid (landlord only) — triggers receipt email
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                payment_method: { type: string, enum: [virement, prelevement, cheque, especes] }
+      responses:
+        '200': { description: ok }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /agent/chat:
+    post:
+      summary: Conversation with Clark (tool-use loop)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AgentChatRequest' }
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AgentChatResponse' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '502': { description: Anthropic upstream unavailable }
+
+  /agent/context:
+    get:
+      summary: User context snapshot (role, counts)
+      responses:
+        '200': { description: ok }
+
+  /agent/tickets:
+    get:
+      summary: List tickets visible to the current user
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Ticket' } }
+    post:
+      summary: Open a ticket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ticket:
+                  type: object
+                  required: [category, description]
+                  properties:
+                    category:    { type: string }
+                    description: { type: string }
+                    priority:    { type: string, enum: [normal, urgent] }
+      responses:
+        '201': { description: created }
+        '422': { $ref: '#/components/responses/Unprocessable' }
