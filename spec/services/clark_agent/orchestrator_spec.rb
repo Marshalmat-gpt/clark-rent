@@ -48,4 +48,62 @@ RSpec.describe ClarkAgent::Orchestrator do
 
     expect(orchestrator.chat('Boucle')).to include('limite d\'itérations')
   end
+
+  describe '#chat tool dispatch' do
+    let(:user) { build_stubbed(:user, role: 'tenant', first_name: 'Alice') }
+    let(:orchestrator) { described_class.new(user: user) }
+
+    let(:tool_use_response) do
+      {
+        'stop_reason' => 'tool_use',
+        'content' => [
+          { 'type' => 'tool_use', 'id' => 'toolu_01', 'name' => 'get_my_lease', 'input' => {} }
+        ]
+      }
+    end
+    let(:end_turn_response) do
+      { 'stop_reason' => 'end_turn', 'content' => [{ 'type' => 'text', 'text' => 'Votre bail est actif.' }] }
+    end
+
+    before do
+      allow(orchestrator).to receive_message_chain(:client, :messages)
+        .and_return(tool_use_response, end_turn_response)
+      allow(ClarkAgent::ToolExecutor).to receive(:execute).and_return({ content: { id: 1 } })
+    end
+
+    it 'dispatches tool call to ToolExecutor' do
+      orchestrator.chat('Montre mon bail')
+      expect(ClarkAgent::ToolExecutor).to have_received(:execute).with(
+        name: 'get_my_lease',
+        input: {},
+        user: user,
+        _role: user.role
+      )
+    end
+
+    it 'strips PROTECTED_TOOL_KEYS before dispatching' do
+      injected_response = {
+        'stop_reason' => 'tool_use',
+        'content' => [
+          {
+            'type' => 'tool_use',
+            'id' => 'toolu_02',
+            'name' => 'get_my_lease',
+            'input' => { 'user' => 'injected', 'role' => 'admin', 'current_user' => 'hacked', 'limit' => 5 }
+          }
+        ]
+      }
+      allow(orchestrator).to receive_message_chain(:client, :messages)
+        .and_return(injected_response, end_turn_response)
+
+      orchestrator.chat('Montre mon bail')
+
+      expect(ClarkAgent::ToolExecutor).to have_received(:execute).with(
+        name: 'get_my_lease',
+        input: { 'limit' => 5 },
+        user: user,
+        _role: user.role
+      )
+    end
+  end
 end
