@@ -17,6 +17,7 @@ module ClarkAgent
 
     # Keys that must never be overridden by LLM-controlled tool input
     PROTECTED_TOOL_KEYS = %i[user role _role current_user].freeze
+    PROTECTED_TOOL_KEYS_STR = PROTECTED_TOOL_KEYS.map(&:to_s).freeze
 
     attr_reader :user, :model
 
@@ -37,7 +38,7 @@ module ClarkAgent
         messages << { role: 'assistant', content: response['content'] }
         messages << { role: 'user',      content: run_tools(tool_uses) }
       end
-      'Je n\'ai pas pu finaliser la requête (limite d\'itérations atteinte).'
+      'Je n\\'ai pas pu finaliser la requête (limite d\\'itérations atteinte).'
     end
 
     private
@@ -81,16 +82,19 @@ module ClarkAgent
         # Strip keys that must never be overridden by LLM-controlled input,
         # then pass string-keyed hash to ToolExecutor (which uses input['key'] access).
         safe_input = (block['input'] || {})
-                       .transform_keys(&:to_sym)
-                       .except(*PROTECTED_TOOL_KEYS)
-                       .transform_keys(&:to_s)
+                       .reject { |k, _| PROTECTED_TOOL_KEYS_STR.include?(k.to_s) }
 
-        result = ToolExecutor.execute(
-          name: block['name'],
-          input: safe_input,
-          user: user,
-          _role: user.role
-        )
+        result = begin
+          ToolExecutor.execute(
+            name: block['name'],
+            input: safe_input,
+            user: user,
+            _role: user.role
+          )
+        rescue StandardError => e
+          Rails.logger.error "[Orchestrator] Tool #{block['name']} raised: #{e.class}: #{e.message}"
+          { content: { error: "Outil #{block['name']} indisponible." } }
+        end
 
         {
           type: 'tool_result',
