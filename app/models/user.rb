@@ -8,6 +8,7 @@ class User < ApplicationRecord
                                 dependent: :destroy, inverse_of: :tenant
   has_many :assigned_tickets,   class_name: 'Ticket', foreign_key: :assigned_to_id,
                                 dependent: :nullify, inverse_of: :assigned_to
+  has_many :chat_sessions,      dependent: :destroy
 
   ROLES = %w[landlord tenant].freeze
 
