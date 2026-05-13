@@ -55,6 +55,7 @@ RSpec.describe 'POST /api/v1/agent/chat', type: :request do
            headers: headers
       body = JSON.parse(response.body)
       expect(body['session_id']).not_to eq(other_session.id)
+      expect(other_session.reload.messages).to be_empty
     end
 
     it 'passes session history to Orchestrator' do
