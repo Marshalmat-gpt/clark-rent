@@ -5,6 +5,7 @@ class ChatSession < ApplicationRecord
   MAX_TURNS = 20
 
   belongs_to :user
+  before_validation { self.messages ||= [] }
 
   # Appends one user message and one assistant reply, then trims history
   # to the last MAX_TURNS * 2 messages (i.e. MAX_TURNS full exchanges).
