@@ -4,7 +4,7 @@ module Api
       class ChatController < BaseController
         def create
           message = params.require(:message)
-          session = find_or_create_session
+          session = find_or_build_session
           reply   = ClarkAgent::Orchestrator.new(user: current_user).chat(
             message,
             history: session.history
@@ -21,14 +21,15 @@ module Api
 
         private
 
-        # Loads the session if session_id belongs to current_user; otherwise creates a new one.
-        # Scoped to current_user to prevent IDOR.
-        def find_or_create_session
+        # Returns an existing session owned by current_user, or builds a new (unsaved) one.
+        # Scoped to current_user to prevent IDOR. New sessions are not persisted until
+        # after a successful Orchestrator reply, preventing orphan rows on failure.
+        def find_or_build_session
           if params[:session_id].present?
             current_user.chat_sessions.find_by(id: params[:session_id]) ||
-              current_user.chat_sessions.create!(messages: [])
+              current_user.chat_sessions.build
           else
-            current_user.chat_sessions.create!(messages: [])
+            current_user.chat_sessions.build
           end
         end
       end
