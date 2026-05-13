@@ -38,13 +38,13 @@ module ClarkAgent
         messages << { role: 'assistant', content: response['content'] }
         messages << { role: 'user',      content: run_tools(tool_uses) }
       end
-      'Je n\\'ai pas pu finaliser la requête (limite d\\'itérations atteinte).'
+      "Je n'ai pas pu finaliser la requête (limite d'itérations atteinte)."
     end
 
     private
 
     def system_prompt
-      name = user.first_name.to_s.gsub(/[^[:alpha:]\\s\\-']/, '').strip.first(64)
+      name = user.first_name.to_s.gsub(/[^[:alpha:]\s\-']/, '').strip.first(64)
       <<~PROMPT
         Tu es Clark, l'agent virtuel de la plateforme de gestion locative Clark Rent.
         L'utilisateur courant est #{name} (#{user.role}).
