@@ -2,7 +2,7 @@
 # avec une boucle "tool use" :
 #   1. envoie le message + la liste des outils ;
 #   2. si Claude répond avec stop_reason=tool_use, exécute les outils
-#      via ToolRegistry et renvoie les résultats ;
+#      via ToolExecutor et renvoie les résultats ;
 #   3. répète jusqu'à stop_reason=end_turn (ou MAX_ITERATIONS atteint).
 #
 # Usage :
@@ -43,7 +43,7 @@ module ClarkAgent
     private
 
     def system_prompt
-      name = user.first_name.to_s.gsub(/[^[:alpha:]\s\-']/, '').strip.first(64)
+      name = user.first_name.to_s.gsub(/[^[:alpha:]\\s\\-']/, '').strip.first(64)
       <<~PROMPT
         Tu es Clark, l'agent virtuel de la plateforme de gestion locative Clark Rent.
         L'utilisateur courant est #{name} (#{user.role}).
@@ -78,26 +78,26 @@ module ClarkAgent
 
     def run_tools(blocks)
       blocks.map do |block|
-        tool = ToolRegistry.find(block['name'])
-        result = if tool
-                   safe_call(tool, block['input'] || {})
-                 else
-                   { error: "Unknown tool #{block['name']}" }
-                 end
+        # Strip keys that must never be overridden by LLM-controlled input,
+        # then pass string-keyed hash to ToolExecutor (which uses input['key'] access).
+        safe_input = (block['input'] || {})
+                       .transform_keys(&:to_sym)
+                       .except(*PROTECTED_TOOL_KEYS)
+                       .transform_keys(&:to_s)
+
+        result = ToolExecutor.execute(
+          name: block['name'],
+          input: safe_input,
+          user: user,
+          _role: user.role
+        )
+
         {
           type: 'tool_result',
           tool_use_id: block['id'],
           content: result.to_json
         }
       end
-    end
-
-    def safe_call(tool, input)
-      # Strip keys that could override the authenticated user or bypass authorization
-      safe_input = input.transform_keys(&:to_sym).except(*PROTECTED_TOOL_KEYS)
-      tool.handler.call(user: user, **safe_input)
-    rescue StandardError => e
-      { error: "#{e.class}: #{e.message}" }
     end
 
     def client
