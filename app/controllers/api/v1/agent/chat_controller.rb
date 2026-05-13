@@ -3,7 +3,7 @@ module Api
     module Agent
       class ChatController < BaseController
         def create
-          message = params.require(:message)
+          message = params.require(:message).to_s
           session = find_or_build_session
           reply   = ClarkAgent::Orchestrator.new(user: current_user).chat(
             message,
