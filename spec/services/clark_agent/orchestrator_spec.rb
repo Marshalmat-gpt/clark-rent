@@ -22,7 +22,7 @@ RSpec.describe ClarkAgent::Orchestrator do
     first  = {
       'stop_reason' => 'tool_use',
       'content' => [
-        { 'type' => 'tool_use', 'id' => 'tool_1', 'name' => 'get_user_context', 'input' => {} }
+        { 'type' => 'tool_use', 'id' => 'tool_1', 'name' => 'get_my_lease', 'input' => {} }
       ]
     }
     second = {
@@ -42,7 +42,7 @@ RSpec.describe ClarkAgent::Orchestrator do
   it 'falls back when tools loop exceeds MAX_ITERATIONS' do
     looping = {
       'stop_reason' => 'tool_use',
-      'content' => [{ 'type' => 'tool_use', 'id' => 'tool_loop', 'name' => 'get_user_context', 'input' => {} }]
+      'content' => [{ 'type' => 'tool_use', 'id' => 'tool_loop', 'name' => 'get_my_lease', 'input' => {} }]
     }
     allow(fake_client).to receive(:messages).and_return(looping)
 
