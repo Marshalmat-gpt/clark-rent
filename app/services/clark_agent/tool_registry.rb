@@ -53,7 +53,7 @@ module ClarkAgent
               enum: %w[lease receipt residence_certificate inventory],
               description: 'Type de document'
             },
-            month: { type: 'string', description: 'Mois YYYY-MM (requis pour les quittances)' }
+            month: { type: 'string', description: 'Mois YYYY-MM — OBLIGATOIRE si document_type est "receipt", ignoré sinon.' }
           },
           required: %w[document_type]
         }
@@ -116,7 +116,7 @@ module ClarkAgent
           required: %w[lease_id month]
         }
       }
-    ].freeze
+    ].tap { |specs| specs.each(&:freeze) }.freeze
 
     def self.tool_specs
       TOOL_SPECS
