@@ -2,18 +2,34 @@ module Api
   module V1
     module Agent
       class ChatController < BaseController
-        MAX_HISTORY = 20
-
         def create
           message = params.require(:message)
-          history = Array(params[:history]).last(MAX_HISTORY)
-          reply   = ClarkAgent::Orchestrator.new(user: current_user).chat(message, history: history)
-          render json: { reply: reply }
+          session = find_or_create_session
+          reply   = ClarkAgent::Orchestrator.new(user: current_user).chat(
+            message,
+            history: session.history
+          )
+          session.append_turn(message, reply)
+          session.save!
+          render json: { reply: reply, session_id: session.id }
         rescue ActionController::ParameterMissing => e
           render json: { error: e.message }, status: :bad_request
         rescue StandardError => e
           Rails.logger.error "[ChatController] #{e.class}: #{e.message}\n#{e.backtrace.first(3).join("\n")}"
           render json: { error: 'Agent unavailable' }, status: :bad_gateway
+        end
+
+        private
+
+        # Loads the session if session_id belongs to current_user; otherwise creates a new one.
+        # Scoped to current_user to prevent IDOR.
+        def find_or_create_session
+          if params[:session_id].present?
+            current_user.chat_sessions.find_by(id: params[:session_id]) ||
+              current_user.chat_sessions.create!(messages: [])
+          else
+            current_user.chat_sessions.create!(messages: [])
+          end
         end
       end
     end
