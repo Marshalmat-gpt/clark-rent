@@ -27,7 +27,7 @@ RSpec.describe ChatSession, type: :model do
       session.append_turn('overflow', 'reply_overflow')
       expect(session.messages.length).to eq(ChatSession::MAX_TURNS * 2)
       expect(session.messages.last['content']).to eq('reply_overflow')
-      expect(session.messages.first['content']).to eq('a1')
+      expect(session.messages.first['content']).to eq('q1')
     end
 
     it 'casts non-string content to string' do
