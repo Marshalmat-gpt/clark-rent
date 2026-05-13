@@ -33,5 +33,26 @@ RSpec.describe ClarkAgent::ToolRegistry do
         expect(spec).not_to have_key(:handler)
       end
     end
+
+    it 'each input_schema is a valid object schema with required keys declared in properties' do
+      specs.each do |spec|
+        schema = spec[:input_schema]
+        expect(schema[:type]).to eq('object'), "#{spec[:name]}: input_schema type must be 'object'"
+        expect(schema[:properties]).to be_a(Hash), "#{spec[:name]}: input_schema must have properties Hash"
+        next unless schema[:required].present?
+
+        schema[:required].each do |req_key|
+          expect(schema[:properties]).to have_key(req_key.to_sym).or(have_key(req_key)),
+            "#{spec[:name]}: required key '#{req_key}' not declared in properties"
+        end
+      end
+    end
+
+    it 'is frozen to prevent runtime mutation' do
+      expect(described_class.tool_specs).to be_frozen
+      described_class.tool_specs.each do |spec|
+        expect(spec).to be_frozen, "Spec for #{spec[:name]} is not frozen"
+      end
+    end
   end
 end
