@@ -56,4 +56,38 @@ RSpec.describe 'Api::V1::Agent::Tickets', type: :request do
       expect(ids).not_to include(other.id)
     end
   end
+  describe 'PATCH /api/v1/agent/tickets/:id/resolve' do
+    let!(:property) { create(:property, user: landlord) }
+    let(:ticket)    { create(:ticket, tenant: tenant, property: property, status: 'open') }
+
+    it 'landlord resolves own ticket + enqueues TicketMailer.resolved to tenant' do
+      ActiveJob::Base.queue_adapter = :test
+
+      expect do
+        patch "/api/v1/agent/tickets/#{ticket.id}/resolve", headers: auth_headers(landlord)
+      end.to have_enqueued_job(SendNotificationJob).with(
+        hash_including(
+          channel: 'email',
+          recipient: tenant.email,
+          payload: hash_including(mailer: 'TicketMailer', action: 'resolved')
+        )
+      )
+
+      expect(response).to have_http_status(:ok)
+      expect(ticket.reload).to have_attributes(status: 'resolved')
+      expect(ticket.resolved_at).not_to be_nil
+    end
+
+    it 'forbids landlord on someone else property' do
+      other_landlord = create(:user, role: 'landlord')
+      patch "/api/v1/agent/tickets/#{ticket.id}/resolve", headers: auth_headers(other_landlord)
+      # other landlord scope returns empty -> 404 via scoped_tickets.find
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it 'forbids tenant from resolving their own ticket' do
+      patch "/api/v1/agent/tickets/#{ticket.id}/resolve", headers: auth_headers(tenant)
+      expect(response).to have_http_status(:forbidden)
+    end
+  end
 end

@@ -48,7 +48,9 @@ Rails.application.routes.draw do
         post 'receipts',              to: 'receipts#create'
         get  'documents/:type',       to: 'documents#show'
         post 'notifications/send',    to: 'notifications#dispatch_message'
-        resources :tickets, only: [:index, :create, :show]
+        resources :tickets, only: [:index, :create, :show] do
+          member { patch :resolve }
+        end
       end
     end
   end

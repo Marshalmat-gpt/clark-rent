@@ -21,6 +21,18 @@ module Api
           end
         end
 
+        # PATCH /api/v1/agent/tickets/:id/resolve
+        # Landlord-owner only. Marks the ticket resolved and emails the
+        # reporting tenant via TicketMailer.resolved.
+        def resolve
+          ticket = scoped_tickets.find(params[:id])
+          return forbidden unless landlord_owner?(ticket)
+
+          ticket.resolve!
+          notify_tenant_resolved(ticket)
+          render json: ticket, serializer: TicketSerializer
+        end
+
         private
 
         def build_ticket
@@ -49,6 +61,21 @@ module Api
             channel: 'email', recipient: ticket.property.user.email,
             payload: { mailer: 'TicketMailer', action: 'created', args: [ticket.id] }
           )
+        end
+
+        def notify_tenant_resolved(ticket)
+          SendNotificationJob.perform_later(
+            channel: 'email', recipient: ticket.tenant.email,
+            payload: { mailer: 'TicketMailer', action: 'resolved', args: [ticket.id] }
+          )
+        end
+
+        def landlord_owner?(ticket)
+          current_user.role == 'landlord' && ticket.property.user_id == current_user.id
+        end
+
+        def forbidden
+          render json: { error: 'Forbidden' }, status: :forbidden
         end
 
         def ticket_params
