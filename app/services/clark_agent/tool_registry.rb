@@ -1,10 +1,11 @@
+# rubocop:disable Metrics/ClassLength, Layout/LineLength
 module ClarkAgent
   class ToolRegistry
     TOOL_SPECS = [
       # ── Tenant tools ────────────────────────────────────────────────────────
       {
         name: 'get_my_lease',
-        description: "Renvoie les détails du bail actif du locataire (loyer, charges, adresse, dates, statut).",
+        description: 'Renvoie les détails du bail actif du locataire (loyer, charges, adresse, dates, statut).',
         input_schema: { type: 'object', properties: {}, required: [] }
       },
       {
@@ -33,7 +34,7 @@ module ClarkAgent
       },
       {
         name: 'get_ticket_status',
-        description: "Retourne les tickets de maintenance du locataire (ouverts par défaut).",
+        description: 'Retourne les tickets de maintenance du locataire (ouverts par défaut).',
         input_schema: {
           type: 'object',
           properties: {
@@ -44,7 +45,7 @@ module ClarkAgent
       },
       {
         name: 'get_document',
-        description: "Renvoie une URL signée (1h) pour télécharger un document : bail, quittance, attestation de résidence, ou état des lieux.",
+        description: 'Renvoie une URL signée (1h) pour télécharger un document : bail, quittance, attestation de résidence, ou état des lieux.',
         input_schema: {
           type: 'object',
           properties: {
@@ -53,7 +54,8 @@ module ClarkAgent
               enum: %w[lease receipt residence_certificate inventory],
               description: 'Type de document'
             },
-            month: { type: 'string', description: 'Mois YYYY-MM — OBLIGATOIRE si document_type est "receipt", ignoré sinon.' }
+            month: { type: 'string',
+                     description: 'Mois YYYY-MM — OBLIGATOIRE si document_type est "receipt", ignoré sinon.' }
           },
           required: %w[document_type]
         }
@@ -61,11 +63,12 @@ module ClarkAgent
       # ── Owner tools ──────────────────────────────────────────────────────────
       {
         name: 'list_properties',
-        description: "Liste les propriétés du propriétaire avec alertes (bail expirant, tickets ouverts).",
+        description: 'Liste les propriétés du propriétaire avec alertes (bail expirant, tickets ouverts).',
         input_schema: {
           type: 'object',
           properties: {
-            status: { type: 'string', enum: %w[active expired all], description: 'Filtre par statut de bail (optionnel)' }
+            status: { type: 'string', enum: %w[active expired all],
+                      description: 'Filtre par statut de bail (optionnel)' }
           },
           required: []
         }
@@ -83,12 +86,13 @@ module ClarkAgent
       },
       {
         name: 'list_applications',
-        description: "Liste les candidatures de location pour un bail.",
+        description: 'Liste les candidatures de location pour un bail.',
         input_schema: {
           type: 'object',
           properties: {
             lease_id: { type: 'integer', description: 'ID du bail' },
-            status: { type: 'string', enum: %w[pending approved rejected], description: 'Filtre par statut (optionnel)' }
+            status: { type: 'string', enum: %w[pending approved rejected],
+                      description: 'Filtre par statut (optionnel)' }
           },
           required: %w[lease_id]
         }
@@ -123,3 +127,4 @@ module ClarkAgent
     end
   end
 end
+# rubocop:enable Metrics/ClassLength, Layout/LineLength
