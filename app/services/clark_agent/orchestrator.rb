@@ -78,30 +78,20 @@ module ClarkAgent
     end
 
     def run_tools(blocks)
-      blocks.map do |block|
-        # Strip keys that must never be overridden by LLM-controlled input,
-        # then pass string-keyed hash to ToolExecutor (which uses input['key'] access).
-        safe_input = (block['input'] || {})
-                       .reject { |k, _| PROTECTED_TOOL_KEYS_STR.include?(k.to_s) }
+      blocks.map { |block| run_one_tool(block) }
+    end
 
-        result = begin
-          ToolExecutor.execute(
-            name: block['name'],
-            input: safe_input,
-            user: user,
-            _role: user.role
-          )
-        rescue StandardError => e
-          Rails.logger.error "[Orchestrator] Tool #{block['name']} raised: #{e.class}: #{e.message}"
-          { content: { error: "Outil #{block['name']} indisponible." } }
-        end
+    def run_one_tool(block)
+      safe_input = (block['input'] || {}).reject { |k, _| PROTECTED_TOOL_KEYS_STR.include?(k.to_s) }
+      result = invoke_tool(block['name'], safe_input)
+      { type: 'tool_result', tool_use_id: block['id'], content: result.to_json }
+    end
 
-        {
-          type: 'tool_result',
-          tool_use_id: block['id'],
-          content: result.to_json
-        }
-      end
+    def invoke_tool(name, input)
+      ToolExecutor.execute(name: name, input: input, user: user, _role: user.role)
+    rescue StandardError => e
+      Rails.logger.error "[Orchestrator] Tool #{name} raised: #{e.class}: #{e.message}"
+      { content: { error: "Outil #{name} indisponible." } }
     end
 
     def client

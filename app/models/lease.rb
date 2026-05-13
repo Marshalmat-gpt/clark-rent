@@ -15,6 +15,8 @@ class Lease < ApplicationRecord
 
   scope :active, -> { where(status: 'active') }
 
+  delegate :property, to: :room
+
   def active?
     status == 'active' && (end_date.nil? || end_date >= Date.current)
   end
