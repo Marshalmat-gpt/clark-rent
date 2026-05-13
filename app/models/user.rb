@@ -18,4 +18,8 @@ class User < ApplicationRecord
   validates :role, inclusion: { in: ROLES }
 
   before_save { self.email = email.downcase }
+  # Most recent active lease for this user (tenant scope).
+  def active_lease
+    leases.where(status: 'active').order(start_date: :desc).first
+  end
 end

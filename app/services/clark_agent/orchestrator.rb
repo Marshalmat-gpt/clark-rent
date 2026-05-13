@@ -2,7 +2,7 @@
 # avec une boucle "tool use" :
 #   1. envoie le message + la liste des outils ;
 #   2. si Claude répond avec stop_reason=tool_use, exécute les outils
-#      via ToolRegistry et renvoie les résultats ;
+#      via ToolExecutor et renvoie les résultats ;
 #   3. répète jusqu'à stop_reason=end_turn (ou MAX_ITERATIONS atteint).
 #
 # Usage :
@@ -17,6 +17,7 @@ module ClarkAgent
 
     # Keys that must never be overridden by LLM-controlled tool input
     PROTECTED_TOOL_KEYS = %i[user role _role current_user].freeze
+    PROTECTED_TOOL_KEYS_STR = PROTECTED_TOOL_KEYS.map(&:to_s).freeze
 
     attr_reader :user, :model
 
@@ -37,7 +38,7 @@ module ClarkAgent
         messages << { role: 'assistant', content: response['content'] }
         messages << { role: 'user',      content: run_tools(tool_uses) }
       end
-      'Je n\'ai pas pu finaliser la requête (limite d\'itérations atteinte).'
+      "Je n'ai pas pu finaliser la requête (limite d'itérations atteinte)."
     end
 
     private
@@ -77,27 +78,20 @@ module ClarkAgent
     end
 
     def run_tools(blocks)
-      blocks.map do |block|
-        tool = ToolRegistry.find(block['name'])
-        result = if tool
-                   safe_call(tool, block['input'] || {})
-                 else
-                   { error: "Unknown tool #{block['name']}" }
-                 end
-        {
-          type: 'tool_result',
-          tool_use_id: block['id'],
-          content: result.to_json
-        }
-      end
+      blocks.map { |block| run_one_tool(block) }
     end
 
-    def safe_call(tool, input)
-      # Strip keys that could override the authenticated user or bypass authorization
-      safe_input = input.transform_keys(&:to_sym).except(*PROTECTED_TOOL_KEYS)
-      tool.handler.call(user: user, **safe_input)
+    def run_one_tool(block)
+      safe_input = (block['input'] || {}).reject { |k, _| PROTECTED_TOOL_KEYS_STR.include?(k.to_s) }
+      result = invoke_tool(block['name'], safe_input)
+      { type: 'tool_result', tool_use_id: block['id'], content: result.to_json }
+    end
+
+    def invoke_tool(name, input)
+      ToolExecutor.execute(name: name, input: input, user: user, _role: user.role)
     rescue StandardError => e
-      { error: "#{e.class}: #{e.message}" }
+      Rails.logger.error "[Orchestrator] Tool #{name} raised: #{e.class}: #{e.message}"
+      { content: { error: "Outil #{name} indisponible." } }
     end
 
     def client
